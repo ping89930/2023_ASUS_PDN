@@ -219,6 +219,7 @@ int main(int argc, char* argv[]){
         cerr << "Error = " << e.getErrorCode() << endl;
         cerr << e.getMessage() << endl;
     }
+
     globalMgr.plotCurrentPaths();
     // */
     /*

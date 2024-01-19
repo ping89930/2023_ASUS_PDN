@@ -60,7 +60,7 @@
         "args": [
             "${workspaceFolder}/exp/input/ST_Components_5.txt",
             "${workspaceFolder}/exp/input/parameters_3.txt",
-            "${workspaceFolder}/exp/input/Project5_ADL_P_Cross_Modified2.txt",
+            "${workspaceFolder}/exp/input/Project5_ADL_P_Cross_Modified.txt",
             "${workspaceFolder}/exp/input/obstacle.txt",
             "${workspaceFolder}/exp/output/#output.html",
             "${workspaceFolder}/exp/output/tuningRes.txt"
