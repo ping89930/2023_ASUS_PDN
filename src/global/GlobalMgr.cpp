@@ -448,16 +448,16 @@ void GlobalMgr::buildOASG(bool case5) {
         //Obs Node的順序是1左下、2右下、3右上、4左上
         for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId){
 
-            if(netId == 2 && case5 == true){
-                _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), _rGraph.targetOASGNode(netId, 0,layerId), false);
-                _rGraph.addOASGEdge(netId, layerId, _rGraph.targetOASGNode(netId, 0,layerId), _rGraph.targetOASGNode(netId, 1,layerId), false);
-                double maxX = _db.vNet(0)->targetPort(0)->boundPolygon()->maxX();
-                double maxY = _db.vNet(0)->targetPort(0)->boundPolygon()->maxY();
-                OASGNode* obsNode = _rGraph.addOASGNode(2, maxX, maxY, OASGNodeType::MIDDLE);
-                _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), obsNode, false);
-                _rGraph.addOASGEdge(netId, layerId, obsNode, _rGraph.targetOASGNode(netId, 1,layerId), false);
-                continue;
-            }
+            // if(netId == 2 && case5 == true){
+            //     _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), _rGraph.targetOASGNode(netId, 0,layerId), false);
+            //     _rGraph.addOASGEdge(netId, layerId, _rGraph.targetOASGNode(netId, 0,layerId), _rGraph.targetOASGNode(netId, 1,layerId), false);
+            //     double maxX = _db.vNet(0)->targetPort(0)->boundPolygon()->maxX();
+            //     double maxY = _db.vNet(0)->targetPort(0)->boundPolygon()->maxY();
+            //     OASGNode* obsNode = _rGraph.addOASGNode(2, maxX, maxY, OASGNodeType::MIDDLE);
+            //     _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), obsNode, false);
+            //     _rGraph.addOASGEdge(netId, layerId, obsNode, _rGraph.targetOASGNode(netId, 1,layerId), false);
+            //     continue;
+            // }
 
             vector<vector<OASGNode*>> obsNodes;
             //如果這個Obs已經有要加Round Edges，就變成True 
@@ -514,7 +514,8 @@ void GlobalMgr::buildOASG(bool case5) {
                     double scanX = _rGraph.sourceOASGNode(netId,layerId)->x();
                     double scanY = _rGraph.sourceOASGNode(netId,layerId)->y();
 
-                    for (int i = 1;i < numScanNode; ++i){
+                    // for (int i = 1;i < numScanNode; ++i){
+                        int i = 1;
                         double curX = traverseNodes[i]-> x();
                         double curY = traverseNodes[i]-> y();
 
@@ -530,11 +531,12 @@ void GlobalMgr::buildOASG(bool case5) {
                                 }   
                             }
                         }
-                    }
+                    // }
 
                 }
                 
                 //開始處理Target
+                
                 else if(currentScanNodeId > 0 && currentScanNodeId <= _db.vNet(netId)->numTPorts()){
                     // cout << "Start building for targets" << endl ;
                     double scanX = traverseNodes[currentScanNodeId]->x();
@@ -617,6 +619,7 @@ void GlobalMgr::buildOASG(bool case5) {
                         }
                     }
                 }
+                
             }
             //這裡不用判斷Edge有沒有重複，因為是第一次加入
             for(int obsId = 0; obsId < _db.numObstacles(layerId); ++obsId){
@@ -718,6 +721,9 @@ void GlobalMgr::plotOASG() {
 }
 
 void GlobalMgr::genCrossConstrs() {
+
+    _rGraph.constructRGraph();
+
     auto addConstraint = [&] (size_t netId, size_t twoPinNetId) {
         for (size_t layId = 0; layId < _rGraph.numLayers(); ++ layId) {
             for (size_t RGEdgeId = 0; RGEdgeId < _rGraph.numRGEdges(twoPinNetId, layId); ++ RGEdgeId) {
@@ -726,8 +732,8 @@ void GlobalMgr::genCrossConstrs() {
                 // the RGEdges from other nets
                 for (size_t netId1 = netId+1; netId1 < _rGraph.numNets(); ++ netId1) {
                     Port* sPort1 = _rGraph.sPort(netId1);
-                    for (size_t netTPortId1 = 0; netTPortId1 < _rGraph.numTPorts(netId1); ++ netTPortId1) {
-
+                    // for (size_t netTPortId1 = 0; netTPortId1 < _rGraph.numTPorts(netId1); ++ netTPortId1) {
+                        size_t netTPortId1 = 0;
                         // the two pin net between the target port and the source port of net1
                         Port* tPort1 = _rGraph.tPort(netId1, netTPortId1);
                         size_t twoPinNetId1 = _rGraph.twoPinNetId(sPort1->portId(), tPort1->portId());
@@ -752,7 +758,7 @@ void GlobalMgr::genCrossConstrs() {
                             }
                         }
 
-                    }
+                    // }
                 }
 
             }
@@ -761,8 +767,8 @@ void GlobalMgr::genCrossConstrs() {
 
     for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
         Port* sPort = _rGraph.sPort(netId);
-        for (size_t netTPortId = 0; netTPortId < _rGraph.numTPorts(netId); ++ netTPortId) {
-
+        // for (size_t netTPortId = 0; netTPortId < _rGraph.numTPorts(netId); ++ netTPortId) {
+            size_t netTPortId = 0;
             // the two pin net between the target port and the source port of the net
             Port* tPort = _rGraph.tPort(netId, netTPortId);
             size_t twoPinNetId = _rGraph.twoPinNetId(sPort->portId(), tPort->portId());
@@ -775,13 +781,31 @@ void GlobalMgr::genCrossConstrs() {
                 addConstraint(netId, twoPinNetId2);
             }
 
-        }
+        // }
     }
+
+    // cerr << "Cross Constraints:" << endl;
+    // for (size_t crossId = 0; crossId < _vCrossConstr.size() * 0.5; ++ crossId) {
+    //     cerr << "cross " << crossId << endl;
+    //     _vCrossConstr[crossId].first->print();
+    //     _vCrossConstr[crossId].second->print();
+    //     cerr << endl;
+    //     for (size_t OASGEdgeId = 0; OASGEdgeId < _vCrossConstr[crossId].first->numEdges(); ++ OASGEdgeId) {
+    //         OASGEdge* e1 =_vCrossConstr[crossId].first->vEdge(OASGEdgeId);
+    //         if (!e1->viaEdge())
+    //         _plot.drawLine(e1->sNode()->x(), e1->sNode()->y(), e1->tNode()->x(), e1->tNode()->y(), crossId, e1->layId(), 1.0);
+    //     }
+    //     for (size_t OASGEdgeId = 0; OASGEdgeId < _vCrossConstr[crossId].second->numEdges(); ++ OASGEdgeId) {
+    //         OASGEdge* e2 =_vCrossConstr[crossId].second->vEdge(OASGEdgeId);
+    //         if (!e2->viaEdge())
+    //         _plot.drawLine(e2->sNode()->x(), e2->sNode()->y(), e2->tNode()->x(), e2->tNode()->y(), crossId, e2->layId(), 1.0);
+    //     }
+    // }
 }
 
 void GlobalMgr::layerDistribution() {
     // construct the routing graph
-    _rGraph.constructRGraph();
+    // _rGraph.constructRGraph();
     // for (size_t nodeId = 0; nodeId < _rGraph.numOASGNodes(); ++ nodeId) {
     //     _rGraph.vOASGNode(nodeId) -> print();
     // }
@@ -1926,7 +1950,7 @@ void GlobalMgr::voltageDemandAssignment() {
                 if (outNode->nPort()) {
                     solver.setMatrix(nPortNode->nPortNodeId(), outNode->nPortNodeId(), conductance);
                 } else {
-                    assert(outNode->port() != _db.vNet(netId)->sourcePort());
+                    // assert(outNode->port() != _db.vNet(netId)->sourcePort());
                     solver.setInputVector(nPortNode->nPortNodeId(), outNode->port()->voltage(), conductance);
                     // solver.setMatrix(nPortNode->nPortNodeId(), _rGraph.numNPortOASGNodes(netId)+outNode->port()->netTPortId(), conductance);
                     // cerr << "voltage = " << outNode->port()->voltage() << endl;

@@ -196,8 +196,10 @@ class OASGEdge {
 
         void print() {
             cerr << "OASGEdge[" << _OASGEdgeId << "], length=" << _length << ", (" << _sNode->x()/40 << " " << _sNode->y()/40 << ") -> (" << _tNode->x()/40 << " " << _tNode->y()/40 << ")" << endl;
+            if (_viaEdge) {
             cerr << "bPolygon = ";
             _boundPolygon->print();
+            }
         }
 
         // void setNode(size_t sNodeId, size_t tNodeId) { _sNodeId = sNodeId; _tNodeId = tNodeId; }
@@ -255,7 +257,13 @@ class RGEdge {
         void addEdge(OASGEdge* e) { _vEdge.push_back(e); } 
         void select() { _selected = true; }
         void print() {
-            cerr << "RGEdge { _length=" << _length << ", _vEdge = " << endl;
+            cerr << "RGEdge { _length=" << _length << endl;
+            cerr << "sPort = ";
+            _vEdge[0]->sNode()->port()->print();
+            cerr << "tPort = ";
+            _vEdge[_vEdge.size()-1]->tNode()->port()->print();
+            cerr << endl;
+            cerr << ", _vEdge = " << endl;
             for (size_t edgeId = 0; edgeId < _vEdge.size(); ++ edgeId) {
                 _vEdge[edgeId]->print();
             }
@@ -286,7 +294,10 @@ class RGraph {
         size_t numLayerPairs() const { return _numLayers - 1; }
         size_t numRGEdges(size_t twoPinNetId, size_t layId) const { return _vRGEdge[twoPinNetId][layId].size(); }
         RGEdge* vEdge(size_t twoPinNetId, size_t layId, size_t RGEdgeId) { return _vRGEdge[twoPinNetId][layId][RGEdgeId]; }
-        size_t twoPinNetId(size_t sPortId, size_t tPortId) { return _portPair2Edge[make_pair(sPortId, tPortId)]; } // tPortId1 < tPortId
+        size_t twoPinNetId(size_t sPortId, size_t tPortId) {
+            assert(_portPair2Edge.count(make_pair(sPortId, tPortId)) > 0);
+            return _portPair2Edge[make_pair(sPortId, tPortId)]; 
+        } // tPortId1 < tPortId
         // size_t sNodeId(size_t netId) const { return _vSNodeId[netId]; }
         // size_t tNodeId(size_t netId, size_t netTNodeId) const { return _vTNodeId[netId][netTNodeId]; }
         // size_t numTNodes(size_t netId) const { return _vTNodeId[netId].size(); }
