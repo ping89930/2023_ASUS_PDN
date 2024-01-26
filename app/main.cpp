@@ -125,11 +125,11 @@ int main(int argc, char* argv[]){
     // double offsetY = 10;
 
     // // For Example 5
-    double boardWidth = 90*gridWidth;
-    double boardHeight = 55*gridWidth;
-    size_t numLayers = 5;
-    double offsetX = 110;
-    double offsetY = 10;
+    // double boardWidth = 90*gridWidth;
+    // double boardHeight = 55*gridWidth;
+    // size_t numLayers = 5;
+    // double offsetX = 110;
+    // double offsetY = 10;
 
 
     // SVGPlot plot(fout, boardWidth, boardHeight, gridWidth, numLayers, 6.0);
@@ -174,53 +174,58 @@ int main(int argc, char* argv[]){
     globalMgr.numVIter = numVIter;
     globalMgr.numIVIter = numIVIter;
 
+    globalMgr.plotDB();
+
     // // // replace this line with a real OASG building function
     // // globalMgr.buildTestOASG();
 
     
-    globalMgr.buildOASG(string(argv[3]).find('5') != std::string::npos);
+    // globalMgr.buildOASG(string(argv[3]).find('5') != std::string::npos);
 
-    // globalMgr.buildOASGXObs();
-    // globalMgr.plotOASG();
+    // // globalMgr.buildOASGXObs();
+    // // globalMgr.plotOASG();
+
     
-    if (string(argv[3]).find('5') != std::string::npos) {
-    // globalMgr.genCrossConstrs();
-    // globalMgr.genCrossCapConstrs()
-    globalMgr.layerDistribution();
-    // // //globalMgr.plotRGraph();
-    globalMgr.buildTestNCOASG();
-    // globalMgr.plotNCOASG();
-    }
-    // // globalMgr.voltageAssignment();
-    // /*
-    globalMgr.genCapConstrs();
-    globalMgr.setUBViaArea(detailedMgr->vNetPortGrid());
-    try {
-        // globalMgr.voltageDemandAssignment();
-        // globalMgr.voltageAssignment();
-        // globalMgr.currentDistribution();
-        auto start_time = std::chrono::high_resolution_clock::now();
+    
+    // if (string(argv[3]).find('5') != std::string::npos) {
+    // // globalMgr.genCrossConstrs();
+    // // globalMgr.genCrossCapConstrs()
+    // globalMgr.layerDistribution();
+    // // // //globalMgr.plotRGraph();
+    // globalMgr.buildTestNCOASG();
+    // // globalMgr.plotNCOASG();
+    // }
+    // // // globalMgr.voltageAssignment();
+    // // /*
+    // globalMgr.genCapConstrs();
+    // globalMgr.setUBViaArea(detailedMgr->vNetPortGrid());
+    // try {
+    //     // globalMgr.voltageDemandAssignment();
+    //     // globalMgr.voltageAssignment();
+    //     // globalMgr.currentDistribution();
+    //     auto start_time = std::chrono::high_resolution_clock::now();
         
-        globalMgr.voltCurrOpt();
+    //     globalMgr.voltCurrOpt();
 
-        // 获取结束时间点
-        auto end_time = std::chrono::high_resolution_clock::now();
+    //     // 获取结束时间点
+    //     auto end_time = std::chrono::high_resolution_clock::now();
 
-        // 计算时间差
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    //     // 计算时间差
+    //     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-        // 输出执行时间
-        std::cout << "Time taken by function: " << duration.count() << " milliseconds" << std::endl;
+    //     // 输出执行时间
+    //     std::cout << "Time taken by function: " << duration.count() << " milliseconds" << std::endl;
        
 
-        // globalMgr.checkFeasible();
-        // globalMgr.checkVoltDemandFeasible();
-    } catch (GRBException e) {
-        cerr << "Error = " << e.getErrorCode() << endl;
-        cerr << e.getMessage() << endl;
-    }
+    //     // globalMgr.checkFeasible();
+    //     // globalMgr.checkVoltDemandFeasible();
+    // } catch (GRBException e) {
+    //     cerr << "Error = " << e.getErrorCode() << endl;
+    //     cerr << e.getMessage() << endl;
+    // }
 
-    globalMgr.plotCurrentPaths();
+    //globalMgr.plotCurrentPaths();
+    
     // */
     /*
     // DetailedMgr detailedMgr(db, plot, 2 * db.VIA16D8A24()->drillRadius());
