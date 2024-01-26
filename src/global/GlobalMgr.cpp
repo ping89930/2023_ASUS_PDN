@@ -448,16 +448,16 @@ void GlobalMgr::buildOASG(bool case5) {
         //Obs Node的順序是1左下、2右下、3右上、4左上
         for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId){
 
-            if(netId == 2 && case5 == true){
-                _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), _rGraph.targetOASGNode(netId, 0,layerId), false);
-                _rGraph.addOASGEdge(netId, layerId, _rGraph.targetOASGNode(netId, 0,layerId), _rGraph.targetOASGNode(netId, 1,layerId), false);
-                double maxX = _db.vNet(0)->targetPort(0)->boundPolygon()->maxX();
-                double maxY = _db.vNet(0)->targetPort(0)->boundPolygon()->maxY();
-                OASGNode* obsNode = _rGraph.addOASGNode(2, maxX, maxY, OASGNodeType::MIDDLE);
-                _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), obsNode, false);
-                _rGraph.addOASGEdge(netId, layerId, obsNode, _rGraph.targetOASGNode(netId, 1,layerId), false);
-                continue;
-            }
+            // if(netId == 2 && case5 == true){
+            //     _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), _rGraph.targetOASGNode(netId, 0,layerId), false);
+            //     _rGraph.addOASGEdge(netId, layerId, _rGraph.targetOASGNode(netId, 0,layerId), _rGraph.targetOASGNode(netId, 1,layerId), false);
+            //     double maxX = _db.vNet(0)->targetPort(0)->boundPolygon()->maxX();
+            //     double maxY = _db.vNet(0)->targetPort(0)->boundPolygon()->maxY();
+            //     OASGNode* obsNode = _rGraph.addOASGNode(2, maxX, maxY, OASGNodeType::MIDDLE);
+            //     _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), obsNode, false);
+            //     _rGraph.addOASGEdge(netId, layerId, obsNode, _rGraph.targetOASGNode(netId, 1,layerId), false);
+            //     continue;
+            // }
 
             vector<vector<OASGNode*>> obsNodes;
             //如果這個Obs已經有要加Round Edges，就變成True 
@@ -514,7 +514,8 @@ void GlobalMgr::buildOASG(bool case5) {
                     double scanX = _rGraph.sourceOASGNode(netId,layerId)->x();
                     double scanY = _rGraph.sourceOASGNode(netId,layerId)->y();
 
-                    for (int i = 1;i < numScanNode; ++i){
+                    // for (int i = 1;i < numScanNode; ++i){
+                        int i = 1;
                         double curX = traverseNodes[i]-> x();
                         double curY = traverseNodes[i]-> y();
 
@@ -530,11 +531,12 @@ void GlobalMgr::buildOASG(bool case5) {
                                 }   
                             }
                         }
-                    }
+                    // }
 
                 }
                 
                 //開始處理Target
+                
                 else if(currentScanNodeId > 0 && currentScanNodeId <= _db.vNet(netId)->numTPorts()){
                     // cout << "Start building for targets" << endl ;
                     double scanX = traverseNodes[currentScanNodeId]->x();
@@ -617,6 +619,7 @@ void GlobalMgr::buildOASG(bool case5) {
                         }
                     }
                 }
+                
             }
             //這裡不用判斷Edge有沒有重複，因為是第一次加入
             for(int obsId = 0; obsId < _db.numObstacles(layerId); ++obsId){
@@ -718,6 +721,9 @@ void GlobalMgr::plotOASG() {
 }
 
 void GlobalMgr::genCrossConstrs() {
+
+    _rGraph.constructRGraph();
+
     auto addConstraint = [&] (size_t netId, size_t twoPinNetId) {
         for (size_t layId = 0; layId < _rGraph.numLayers(); ++ layId) {
             for (size_t RGEdgeId = 0; RGEdgeId < _rGraph.numRGEdges(twoPinNetId, layId); ++ RGEdgeId) {
@@ -726,8 +732,8 @@ void GlobalMgr::genCrossConstrs() {
                 // the RGEdges from other nets
                 for (size_t netId1 = netId+1; netId1 < _rGraph.numNets(); ++ netId1) {
                     Port* sPort1 = _rGraph.sPort(netId1);
-                    for (size_t netTPortId1 = 0; netTPortId1 < _rGraph.numTPorts(netId1); ++ netTPortId1) {
-
+                    // for (size_t netTPortId1 = 0; netTPortId1 < _rGraph.numTPorts(netId1); ++ netTPortId1) {
+                        size_t netTPortId1 = 0;
                         // the two pin net between the target port and the source port of net1
                         Port* tPort1 = _rGraph.tPort(netId1, netTPortId1);
                         size_t twoPinNetId1 = _rGraph.twoPinNetId(sPort1->portId(), tPort1->portId());
@@ -752,7 +758,7 @@ void GlobalMgr::genCrossConstrs() {
                             }
                         }
 
-                    }
+                    // }
                 }
 
             }
@@ -761,8 +767,8 @@ void GlobalMgr::genCrossConstrs() {
 
     for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
         Port* sPort = _rGraph.sPort(netId);
-        for (size_t netTPortId = 0; netTPortId < _rGraph.numTPorts(netId); ++ netTPortId) {
-
+        // for (size_t netTPortId = 0; netTPortId < _rGraph.numTPorts(netId); ++ netTPortId) {
+            size_t netTPortId = 0;
             // the two pin net between the target port and the source port of the net
             Port* tPort = _rGraph.tPort(netId, netTPortId);
             size_t twoPinNetId = _rGraph.twoPinNetId(sPort->portId(), tPort->portId());
@@ -775,13 +781,31 @@ void GlobalMgr::genCrossConstrs() {
                 addConstraint(netId, twoPinNetId2);
             }
 
-        }
+        // }
     }
+
+    // cerr << "Cross Constraints:" << endl;
+    // for (size_t crossId = 0; crossId < _vCrossConstr.size() * 0.5; ++ crossId) {
+    //     cerr << "cross " << crossId << endl;
+    //     _vCrossConstr[crossId].first->print();
+    //     _vCrossConstr[crossId].second->print();
+    //     cerr << endl;
+    //     for (size_t OASGEdgeId = 0; OASGEdgeId < _vCrossConstr[crossId].first->numEdges(); ++ OASGEdgeId) {
+    //         OASGEdge* e1 =_vCrossConstr[crossId].first->vEdge(OASGEdgeId);
+    //         if (!e1->viaEdge())
+    //         _plot.drawLine(e1->sNode()->x(), e1->sNode()->y(), e1->tNode()->x(), e1->tNode()->y(), crossId, e1->layId(), 1.0);
+    //     }
+    //     for (size_t OASGEdgeId = 0; OASGEdgeId < _vCrossConstr[crossId].second->numEdges(); ++ OASGEdgeId) {
+    //         OASGEdge* e2 =_vCrossConstr[crossId].second->vEdge(OASGEdgeId);
+    //         if (!e2->viaEdge())
+    //         _plot.drawLine(e2->sNode()->x(), e2->sNode()->y(), e2->tNode()->x(), e2->tNode()->y(), crossId, e2->layId(), 1.0);
+    //     }
+    // }
 }
 
 void GlobalMgr::layerDistribution() {
     // construct the routing graph
-    _rGraph.constructRGraph();
+    // _rGraph.constructRGraph();
     // for (size_t nodeId = 0; nodeId < _rGraph.numOASGNodes(); ++ nodeId) {
     //     _rGraph.vOASGNode(nodeId) -> print();
     // }
@@ -1926,7 +1950,7 @@ void GlobalMgr::voltageDemandAssignment() {
                 if (outNode->nPort()) {
                     solver.setMatrix(nPortNode->nPortNodeId(), outNode->nPortNodeId(), conductance);
                 } else {
-                    assert(outNode->port() != _db.vNet(netId)->sourcePort());
+                    // assert(outNode->port() != _db.vNet(netId)->sourcePort());
                     solver.setInputVector(nPortNode->nPortNodeId(), outNode->port()->voltage(), conductance);
                     // solver.setMatrix(nPortNode->nPortNodeId(), _rGraph.numNPortOASGNodes(netId)+outNode->port()->netTPortId(), conductance);
                     // cerr << "voltage = " << outNode->port()->voltage() << endl;
@@ -2828,127 +2852,97 @@ void GlobalMgr::genCapConstrs() {
     
     //search each layer                                                                           
     for (size_t layId = 0; layId < _rGraph.numLayers(); ++ layId){
-        // cout << "LAYER :" << layId << endl << endl;
         //search each net
-        for(size_t S_netId = 0; S_netId < _rGraph.numNets(); ++ S_netId){
+        //for(size_t S_netId = 0; S_netId < _rGraph.numNets(); ++ S_netId){
+        //use Rgraph RGEdge to add constraint
+        for(size_t S_twoPinNetId = 0; S_twoPinNetId < _rGraph.num2PinNets(); ++S_twoPinNetId ){
             //search each edge
-            for (size_t S_EdgeId = 0; S_EdgeId < _rGraph.numPlaneOASGEdges(S_netId, layId); ++ S_EdgeId){
-                OASGEdge* e1 = _rGraph.vPlaneOASGEdge(S_netId, layId, S_EdgeId);
-                pair<double, double> ratio;
-                pair<bool, bool> right;
-                double width;
+            //for (size_t S_EdgeId = 0; S_EdgeId < _rGraph.numPlaneOASGEdges(S_netId, layId); ++ S_EdgeId){
+            for(size_t S_RGEdgeId = 0; S_RGEdgeId < _rGraph.numRGEdges(S_twoPinNetId,layId); ++S_RGEdgeId){
+                RGEdge* rge1 = _rGraph.vEdge(S_twoPinNetId,layId,S_RGEdgeId);
+                for(size_t S_EdgeId = 0; S_EdgeId < rge1->numEdges(); ++S_EdgeId){
+                    //OASGEdge* e1 = _rGraph.vPlaneOASGEdge(S_netId, layId, S_EdgeId);
+                    OASGEdge* e1 = rge1->vEdge(S_EdgeId);
+
+                    pair<double, double> ratio;
+                    pair<bool, bool> right;
+                    double width;
                 
-                //compare to other net edge
-                for(size_t T_netId = S_netId; T_netId < _rGraph.numNets(); ++ T_netId){
-                    for (size_t T_EdgeId = 0; T_EdgeId < _rGraph.numPlaneOASGEdges(T_netId, layId); ++ T_EdgeId){
-                        OASGEdge* e2 = _rGraph.vPlaneOASGEdge(T_netId, layId, T_EdgeId);
-    
-                        if (e1 != e2) {
-                            // bool isSameNet = (T_netId == S_netId);
-                            // if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
-                            //              make_pair(e1->tNode()->x(), e1->tNode()->y()),
-                            //              make_pair(e2->sNode()->x(), e2->sNode()->y()),
-                            //              make_pair(e2->tNode()->x(), e2->tNode()->y()),
-                            //              ratio, right, width, isSameNet))
-                            //     addCapConstr(e1, right.first, ratio.first, e2, right.second, ratio.second, width);
-                            double vtxX = e2->tNode()->x() - e2->sNode()->x();
-                            double vtxY = e2->tNode()->y() - e2->sNode()->y();
-                            pair<double, double> S2, T2;
+                    //compare to other net edge
+                    //for(size_t T_netId = S_netId; T_netId < _rGraph.numNets(); ++ T_netId){
+                    for(size_t T_twoPinNetId = S_twoPinNetId; T_twoPinNetId < _rGraph.num2PinNets(); ++T_twoPinNetId ){
+                        //for (size_t T_EdgeId = 0; T_EdgeId < _rGraph.numPlaneOASGEdges(T_netId, layId); ++ T_EdgeId){
+                        for(size_t T_RGEdgeId = 0; T_RGEdgeId < _rGraph.numRGEdges(T_twoPinNetId,layId); ++T_RGEdgeId){
+                            RGEdge* rge2 = _rGraph.vEdge(T_twoPinNetId,layId,T_RGEdgeId);
 
-                            S2 = make_pair((e2->sNode()->x() + pow(10,-7)*vtxX), ( e2->sNode()->y() + pow(10,-7)*vtxY));
-                            T2 = make_pair((e2->tNode()->x() - pow(10,-7)*vtxX), ( e2->tNode()->y() - pow(10,-7)*vtxY));
+                            auto it = std::find_if(_vCrossConstr.begin(), _vCrossConstr.end(), [rge1, rge2](const std::pair<RGEdge*, RGEdge*>& edgePair) {
+                                return (edgePair.first == rge1 && edgePair.second == rge2) || (edgePair.first == rge2 && edgePair.second == rge1);
+                            });
 
-                            if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),make_pair(e1->tNode()->x(), e1->tNode()->y()),S2, T2,ratio, right, width)) {
-                                if (S_netId == T_netId) {
-                                    addNetCapConstr(e1, right.first, ratio.first, e2, right.second, ratio.second, width);
-                                } 
-                                else {
-                                    addCapConstr(e1, right.first, ratio.first, e2, right.second, ratio.second, width);
-                                }
-                            }
-                        }
-                    }   
-                }
-
-                //紀錄edge 與 obstacle間constraint最小的值，存起來最後只新增一項add cap constraint
-                double min_width_R = 999999;
-                double min_width_L = 999999;
-                double min_ratio_R = 1;
-                double min_ratio_L = 1;
-                ///////////////////////////////////////////////////////////////////////////////
-
-                // obstacle constraint
-                for (size_t obsId = 0; obsId < _db.vMetalLayer(layId)->numObstacles(); ++ obsId) {
-                   
-                    Obstacle* obs = _db.vMetalLayer(layId)->vObstacle(obsId);
-                    pair<double, double> S2, T2;
-                    for (size_t shapeId = 0; shapeId < obs->numShapes(); ++ shapeId) {
-                        for(size_t vtxId = 0; vtxId < obs->vShape(shapeId)->numBPolyVtcs(); ++ vtxId){
-                            // get the edge coordinates
-                            S2 = make_pair(obs->vShape(shapeId)->bPolygonX(vtxId), obs->vShape(shapeId)->bPolygonY(vtxId));
-                            T2 = make_pair(obs->vShape(shapeId)->bPolygonX((vtxId+1) % obs->vShape(shapeId)->numBPolyVtcs()), obs->vShape(shapeId)->bPolygonY((vtxId+1) % obs->vShape(shapeId)->numBPolyVtcs()));
-
-                            double vectorX = (T2.first - S2.first);
-                            double vectorY = (T2.second - S2.second);
+                            if (it != _vCrossConstr.end()) break;
+                            else {
                             
-                            double normalX = vectorY;
-                            double normalY = -vectorX;
+                                for(size_t T_EdgeId = 0; T_EdgeId < rge1->numEdges(); ++T_EdgeId){
+                                    //OASGEdge* e2 = _rGraph.vPlaneOASGEdge(T_netId, layId, T_EdgeId);
+                                    OASGEdge* e2 = rge2->vEdge(T_EdgeId);
 
-                            S2 = make_pair((S2.first + pow(10,-6)*(vectorX) - pow(10,-8)*(normalX)), (S2.second + pow(10,-6)*(vectorY) - pow(10,-8)*(normalY)));
-                            //new T2 
-                            T2 = make_pair((T2.first + pow(10,-6)*(-vectorX) - pow(10,-8)*(normalX)), (T2.second + pow(10,-6)*(-vectorY) - pow(10,-8)*(normalY)));
-                        
-                            if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),make_pair(e1->tNode()->x(), e1->tNode()->y()),S2, T2, ratio, right, width)){
-                                //Right
-                                if(right.first){
-                                    if(ratio.first != 0){
-                                        if((width/ratio.first) < (min_width_R/min_ratio_R)){
-                                            min_width_R = width;
-                                            min_ratio_R = ratio.first;
-                                            //addSglCapConstr(e1, right.first, ratio.first, width);
-                                        }
-                                    }
-                                }
-                                //left
-                                else{
-                                    if(ratio.first != 0){
-                                        if((width/ratio.first) < (min_width_L/min_ratio_L)){
-                                            min_width_L = width;
-                                            min_ratio_L = ratio.first;
-                                            //addSglCapConstr(e1, right.first, ratio.first, width);
+                                    if (e1 != e2) {
+                                        // bool isSameNet = (T_netId == S_netId);
+                                        // if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
+                                        //              make_pair(e1->tNode()->x(), e1->tNode()->y()),
+                                        //              make_pair(e2->sNode()->x(), e2->sNode()->y()),
+                                        //              make_pair(e2->tNode()->x(), e2->tNode()->y()),
+                                        //              ratio, right, width, isSameNet))
+                                        //     addCapConstr(e1, right.first, ratio.first, e2, right.second, ratio.second, width);
+                                        double vtxX = e2->tNode()->x() - e2->sNode()->x();
+                                        double vtxY = e2->tNode()->y() - e2->sNode()->y();
+                                        pair<double, double> S2, T2;
+
+                                        S2 = make_pair((e2->sNode()->x() + pow(10,-7)*vtxX), ( e2->sNode()->y() + pow(10,-7)*vtxY));
+                                        T2 = make_pair((e2->tNode()->x() - pow(10,-7)*vtxX), ( e2->tNode()->y() - pow(10,-7)*vtxY));
+
+                                        if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),make_pair(e1->tNode()->x(), e1->tNode()->y()),S2, T2,ratio, right, width)) {
+                                            if (e1->netId() == e2->netId()) {
+                                                addNetCapConstr(e1, right.first, ratio.first, e2, right.second, ratio.second, width);
+                                            } 
+                                            else {
+                                                addCapConstr(e1, right.first, ratio.first, e2, right.second, ratio.second, width);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
+                        }   
                     }
-                }
 
-                // port bounding polygon constraints from other nets
-                // Bug: if the port is not connected on the layer, its bounding polygon should be ignored
-                for(size_t T_netId = 0; T_netId < _rGraph.numNets(); ++ T_netId) {
-                    //if (T_netId != S_netId) {
+                    //紀錄edge 與 obstacle間constraint最小的值，存起來最後只新增一項add cap constraint
+                    double min_width_R = 999999;
+                    double min_width_L = 999999;
+                    double min_ratio_R = 1;
+                    double min_ratio_L = 1;
+                    ///////////////////////////////////////////////////////////////////////////////
+
+                    // obstacle constraint
+                    for (size_t obsId = 0; obsId < _db.vMetalLayer(layId)->numObstacles(); ++ obsId) {
+                    
+                        Obstacle* obs = _db.vMetalLayer(layId)->vObstacle(obsId);
                         pair<double, double> S2, T2;
-
-                        Polygon* bPolygon = _db.vNet(T_netId)->sourcePort()->boundPolygon();
-                        pair<double,double> sourceNode = make_pair(bPolygon->ctrX(),bPolygon->ctrY());
-
-                        if(!((e1->sNode()->x() == sourceNode.first && e1->sNode()->y() == sourceNode.second)||(e1->tNode()->x() == sourceNode.first && e1->tNode()->y() == sourceNode.second))){
-        
-                            for (size_t vtxId = 0; vtxId < bPolygon->numVtcs(); ++ vtxId) {
+                        for (size_t shapeId = 0; shapeId < obs->numShapes(); ++ shapeId) {
+                            for(size_t vtxId = 0; vtxId < obs->vShape(shapeId)->numBPolyVtcs(); ++ vtxId){
                                 // get the edge coordinates
-                                S2 = make_pair(bPolygon->vtxX(vtxId), bPolygon->vtxY(vtxId));
-                                T2 = make_pair(bPolygon->vtxX((vtxId+1) % bPolygon->numVtcs()), bPolygon->vtxY((vtxId+1) % bPolygon->numVtcs()));
+                                S2 = make_pair(obs->vShape(shapeId)->bPolygonX(vtxId), obs->vShape(shapeId)->bPolygonY(vtxId));
+                                T2 = make_pair(obs->vShape(shapeId)->bPolygonX((vtxId+1) % obs->vShape(shapeId)->numBPolyVtcs()), obs->vShape(shapeId)->bPolygonY((vtxId+1) % obs->vShape(shapeId)->numBPolyVtcs()));
 
                                 double vectorX = (T2.first - S2.first);
                                 double vectorY = (T2.second - S2.second);
+                                
                                 double normalX = vectorY;
                                 double normalY = -vectorX;
-                                //new S2
+
                                 S2 = make_pair((S2.first + pow(10,-6)*(vectorX) - pow(10,-8)*(normalX)), (S2.second + pow(10,-6)*(vectorY) - pow(10,-8)*(normalY)));
                                 //new T2 
                                 T2 = make_pair((T2.first + pow(10,-6)*(-vectorX) - pow(10,-8)*(normalX)), (T2.second + pow(10,-6)*(-vectorY) - pow(10,-8)*(normalY)));
-
+                            
                                 if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),make_pair(e1->tNode()->x(), e1->tNode()->y()),S2, T2, ratio, right, width)){
                                     //Right
                                     if(right.first){
@@ -2973,12 +2967,19 @@ void GlobalMgr::genCapConstrs() {
                                 }
                             }
                         }
+                    }
 
-                        for (size_t tPortId = 0; tPortId < _db.vNet(T_netId)->numTPorts(); ++ tPortId) {
-                            bPolygon = _db.vNet(T_netId)->targetPort(tPortId)->boundPolygon();
-                            pair<double,double> targetNode = make_pair(bPolygon->ctrX(),bPolygon->ctrY());
+                    // port bounding polygon constraints from other nets
+                    // Bug: if the port is not connected on the layer, its bounding polygon should be ignored
+                    for(size_t T_netId = 0; T_netId < _rGraph.numNets(); ++ T_netId) {
+                        //if (T_netId != S_netId) {
+                            pair<double, double> S2, T2;
 
-                            if(!((e1->sNode()->x() == targetNode.first && e1->sNode()->y() == targetNode.second) || (e1->tNode()->x() == targetNode.first && e1->tNode()->y() == targetNode.second))){
+                            Polygon* bPolygon = _db.vNet(T_netId)->sourcePort()->boundPolygon();
+                            pair<double,double> sourceNode = make_pair(bPolygon->ctrX(),bPolygon->ctrY());
+
+                            if(!((e1->sNode()->x() == sourceNode.first && e1->sNode()->y() == sourceNode.second)||(e1->tNode()->x() == sourceNode.first && e1->tNode()->y() == sourceNode.second))){
+            
                                 for (size_t vtxId = 0; vtxId < bPolygon->numVtcs(); ++ vtxId) {
                                     // get the edge coordinates
                                     S2 = make_pair(bPolygon->vtxX(vtxId), bPolygon->vtxY(vtxId));
@@ -3017,45 +3018,90 @@ void GlobalMgr::genCapConstrs() {
                                     }
                                 }
                             }
-                        }
-                    //}
+
+                            for (size_t tPortId = 0; tPortId < _db.vNet(T_netId)->numTPorts(); ++ tPortId) {
+                                bPolygon = _db.vNet(T_netId)->targetPort(tPortId)->boundPolygon();
+                                pair<double,double> targetNode = make_pair(bPolygon->ctrX(),bPolygon->ctrY());
+
+                                if(!((e1->sNode()->x() == targetNode.first && e1->sNode()->y() == targetNode.second) || (e1->tNode()->x() == targetNode.first && e1->tNode()->y() == targetNode.second))){
+                                    for (size_t vtxId = 0; vtxId < bPolygon->numVtcs(); ++ vtxId) {
+                                        // get the edge coordinates
+                                        S2 = make_pair(bPolygon->vtxX(vtxId), bPolygon->vtxY(vtxId));
+                                        T2 = make_pair(bPolygon->vtxX((vtxId+1) % bPolygon->numVtcs()), bPolygon->vtxY((vtxId+1) % bPolygon->numVtcs()));
+
+                                        double vectorX = (T2.first - S2.first);
+                                        double vectorY = (T2.second - S2.second);
+                                        double normalX = vectorY;
+                                        double normalY = -vectorX;
+                                        //new S2
+                                        S2 = make_pair((S2.first + pow(10,-6)*(vectorX) - pow(10,-8)*(normalX)), (S2.second + pow(10,-6)*(vectorY) - pow(10,-8)*(normalY)));
+                                        //new T2 
+                                        T2 = make_pair((T2.first + pow(10,-6)*(-vectorX) - pow(10,-8)*(normalX)), (T2.second + pow(10,-6)*(-vectorY) - pow(10,-8)*(normalY)));
+
+                                        if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),make_pair(e1->tNode()->x(), e1->tNode()->y()),S2, T2, ratio, right, width)){
+                                            //Right
+                                            if(right.first){
+                                                if(ratio.first != 0){
+                                                    if((width/ratio.first) < (min_width_R/min_ratio_R)){
+                                                        min_width_R = width;
+                                                        min_ratio_R = ratio.first;
+                                                        //addSglCapConstr(e1, right.first, ratio.first, width);
+                                                    }
+                                                }
+                                            }
+                                            //left
+                                            else{
+                                                if(ratio.first != 0){
+                                                    if((width/ratio.first) < (min_width_L/min_ratio_L)){
+                                                        min_width_L = width;
+                                                        min_ratio_L = ratio.first;
+                                                        //addSglCapConstr(e1, right.first, ratio.first, width);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        //}
+                    }
+
+                    //Right
+                    addSglCapConstr(e1, 1 , min_ratio_R, min_width_R);
+                    //Left
+                    addSglCapConstr(e1, 0 , min_ratio_L, min_width_L);
+                    
+
+                    // board cnstraint
+                    // bottom
+                    if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
+                                    make_pair(e1->tNode()->x(), e1->tNode()->y()),
+                                    make_pair(0, 0),
+                                    make_pair(_db.boardWidth(), 0),
+                                    ratio, right, width))
+                        addSglCapConstr(e1, right.first, ratio.first, width);
+                    // left
+                    if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
+                                    make_pair(e1->tNode()->x(), e1->tNode()->y()),
+                                    make_pair(0, 0),
+                                    make_pair(0, _db.boardHeight()),
+                                    ratio, right, width))
+                        addSglCapConstr(e1, right.first, ratio.first, width);
+                    // top
+                    if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
+                                    make_pair(e1->tNode()->x(), e1->tNode()->y()),
+                                    make_pair(0, _db.boardHeight()),
+                                    make_pair(_db.boardWidth(), _db.boardHeight()),
+                                    ratio, right, width))
+                        addSglCapConstr(e1, right.first, ratio.first, width);
+                    // right
+                    if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
+                                    make_pair(e1->tNode()->x(), e1->tNode()->y()),
+                                    make_pair(_db.boardWidth(), 0),
+                                    make_pair(_db.boardWidth(), _db.boardHeight()),
+                                    ratio, right, width))
+                        addSglCapConstr(e1, right.first, ratio.first, width);
                 }
-
-                //Right
-                addSglCapConstr(e1, 1 , min_ratio_R, min_width_R);
-                //Left
-                addSglCapConstr(e1, 0 , min_ratio_L, min_width_L);
-                
-
-                // board cnstraint
-                // bottom
-                if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
-                                 make_pair(e1->tNode()->x(), e1->tNode()->y()),
-                                 make_pair(0, 0),
-                                 make_pair(_db.boardWidth(), 0),
-                                 ratio, right, width))
-                    addSglCapConstr(e1, right.first, ratio.first, width);
-                // left
-                if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
-                                 make_pair(e1->tNode()->x(), e1->tNode()->y()),
-                                 make_pair(0, 0),
-                                 make_pair(0, _db.boardHeight()),
-                                 ratio, right, width))
-                    addSglCapConstr(e1, right.first, ratio.first, width);
-                // top
-                if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
-                                 make_pair(e1->tNode()->x(), e1->tNode()->y()),
-                                 make_pair(0, _db.boardHeight()),
-                                 make_pair(_db.boardWidth(), _db.boardHeight()),
-                                 ratio, right, width))
-                    addSglCapConstr(e1, right.first, ratio.first, width);
-                // right
-                if(addConstraint(make_pair(e1->sNode()->x(), e1->sNode()->y()),
-                                 make_pair(e1->tNode()->x(), e1->tNode()->y()),
-                                 make_pair(_db.boardWidth(), 0),
-                                 make_pair(_db.boardWidth(), _db.boardHeight()),
-                                 ratio, right, width))
-                    addSglCapConstr(e1, right.first, ratio.first, width);
             }
         }  
     }
