@@ -184,7 +184,6 @@ int main(int argc, char* argv[]){
 
     // // globalMgr.buildOASGXObs();
     // // globalMgr.plotOASG();
-
     
     if (string(argv[3]).find('5') != std::string::npos) {
     globalMgr.genCrossConstrs();
@@ -194,9 +193,12 @@ int main(int argc, char* argv[]){
     // globalMgr.buildTestNCOASG();
     // globalMgr.plotNCOASG();
     }
+
     // // globalMgr.voltageAssignment();
     // /*
+    
     globalMgr.genCapConstrs();
+
     globalMgr.setUBViaArea(detailedMgr->vNetPortGrid());
     try {
         // globalMgr.voltageDemandAssignment();

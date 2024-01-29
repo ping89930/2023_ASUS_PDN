@@ -2882,7 +2882,7 @@ void GlobalMgr::genCapConstrs() {
                             if (it != _vCrossConstr.end()) break;
                             else {
                             
-                                for(size_t T_EdgeId = 0; T_EdgeId < rge1->numEdges(); ++T_EdgeId){
+                                for(size_t T_EdgeId = 0; T_EdgeId < rge2->numEdges(); ++T_EdgeId){
                                     //OASGEdge* e2 = _rGraph.vPlaneOASGEdge(T_netId, layId, T_EdgeId);
                                     OASGEdge* e2 = rge2->vEdge(T_EdgeId);
 
