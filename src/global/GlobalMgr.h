@@ -58,6 +58,7 @@ class GlobalMgr {
 
         void plotOASG();
         void plotRGraph();
+        void plotRGraphPath();
         void layerDistribution();
         void buildTestNCOASG();
         void plotNCOASG();
@@ -94,6 +95,16 @@ class GlobalMgr {
         vector<double> _vAfterCost;
         vector<double> _vBeforeOverlapCost;
         vector<double> _vAfterOverlapCost;
+
+        //平:建立redundant OASGEdge 
+        vector<pair<OASGNode*,OASGNode*>> redundantObsNode;
+        vector<pair<OASGNode*,OASGNode*>> redundantViasNode;
+        bool isSegmentIntersectingWithVias(OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster, size_t netId);
+        vector<vector<bool>> addViasRoundEdges; //[netId][viaId]
+        void connectWithVia(int netId, int layerId,OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster);
+        vector<vector<vector<OASGNode*> > > viaOASGNodes;
+        vector<vector<OASGNode*>> obstacle;
+        
     private:
         double oldViaEdgeArea(OASGEdge* e);
         // double viaEdgeArea(OASGEdge* e);

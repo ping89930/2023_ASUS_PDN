@@ -183,21 +183,22 @@ int main(int argc, char* argv[]){
     globalMgr.buildOASG(string(argv[3]).find('5') != std::string::npos);
 
     // // globalMgr.buildOASGXObs();
-    // // globalMgr.plotOASG();
+    //globalMgr.plotOASG();
     
     if (string(argv[3]).find('5') != std::string::npos) {
     globalMgr.genCrossConstrs();
     // globalMgr.genCrossCapConstrs()
     // globalMgr.layerDistribution();
-    // // //globalMgr.plotRGraph();
     // globalMgr.buildTestNCOASG();
     // globalMgr.plotNCOASG();
     }
 
     // // globalMgr.voltageAssignment();
     // /*
-    
+    //globalMgr.plotOASG();
+    globalMgr.plotRGraphPath();
     globalMgr.genCapConstrs();
+    
 
     globalMgr.setUBViaArea(detailedMgr->vNetPortGrid());
     try {
@@ -225,7 +226,7 @@ int main(int argc, char* argv[]){
         cerr << e.getMessage() << endl;
     }
 
-    globalMgr.plotCurrentPaths();
+    //globalMgr.plotCurrentPaths();
     
     // */
     /*

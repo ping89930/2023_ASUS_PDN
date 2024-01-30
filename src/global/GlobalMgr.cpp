@@ -205,7 +205,7 @@ bool GlobalMgr::isSegmentIntersectingWithObstacles(OASGNode* a, OASGNode* b, vec
     // return false;
     int numObs = obstacle.size();
     for(int i = 0; i< numObs;++i){
-        int numVertices = obstacle[0].size();
+        int numVertices = obstacle[i].size();
         for (int j = 0; j< numVertices-1;++j){
             if(doIntersect(a, b, obstacle[i][j], obstacle[i][j+1])){
                 addObsRoundEdges[i] = true;
@@ -214,6 +214,25 @@ bool GlobalMgr::isSegmentIntersectingWithObstacles(OASGNode* a, OASGNode* b, vec
         }
         if(doIntersect(a, b, obstacle[i][0], obstacle[i][numVertices-1])){
             addObsRoundEdges[i] = true;
+            return true;
+        } 
+    }
+    return false;
+}
+
+bool GlobalMgr::isSegmentIntersectingWithVias(OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster, size_t netId){
+    // return false;
+    int numvias = ViaCluster.size();
+    for(int i = 0; i< numvias;++i){
+        int numVertices = ViaCluster[i].size();
+        for (int j = 0; j< numVertices-1;++j){
+            if(doIntersect(a, b, ViaCluster[i][j], ViaCluster[i][j+1])){
+                addViasRoundEdges[netId][i] = true;
+                return true;
+            }
+        }
+        if(doIntersect(a, b, ViaCluster[i][0], ViaCluster[i][numVertices-1])){
+            addViasRoundEdges[netId][i] = true;
             return true;
         } 
     }
@@ -239,26 +258,26 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
             break;
         }
         inTouchWithThisObs = false;
-        OASGNode * obs1A;
-        OASGNode * obs1B;
-        OASGNode * obs2A;
-        OASGNode * obs2B;
+        OASGNode* obs1A;
+        OASGNode* obs1B;
+        OASGNode* obs2A;
+        OASGNode* obs2B;
 
         int numVertices = obstacle[i].size();
         
         for (int j = 0; j< numVertices; j++){
             
             if(j == (numVertices-1)){
-                if(!obs1IsTested && doIntersect(a, b, obstacle[i][0], obstacle[i][numVertices-1])){
+                if(!obs1IsTested && doIntersect(a, b, obstacle[i][numVertices-1], obstacle[i][0])){
                     inTouchWithThisObs = true;
-                    obs1A = obstacle[i][0];
-                    obs1B = obstacle[i][numVertices-1];
+                    obs1A = obstacle[i][numVertices-1];
+                    obs1B = obstacle[i][0];
                     obs1IsTested = true;
                 }
-                else if(obs1IsTested && doIntersect(a, b, obstacle[i][0], obstacle[i][numVertices-1])){
+                else if(obs1IsTested && doIntersect(a, b, obstacle[i][numVertices-1], obstacle[i][0])){
                     inTouchWithThisObs = true;
-                    obs2A = obstacle[i][0];
-                    obs2B = obstacle[i][numVertices-1];
+                    obs2A = obstacle[i][numVertices-1];
+                    obs2B = obstacle[i][0];
                 }
             }
             else{
@@ -276,7 +295,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
             }
         }
         
-        if(inTouchWithThisObs ==true){
+        if(inTouchWithThisObs == true){
             alreadyDealWtihAObs = true;
 
             // for(int nodeId = 0; nodeId < (obstacle[i].size()-1); ++nodeId){
@@ -296,52 +315,215 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     // connectWithObstacle(netId, layerId, a, obs1A, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, a, obs1A)){
-                    _rGraph.addOASGEdge(netId, layerId, a, obs1A, false);
+                    if(!checkWithVias(netId, layerId, a, obs1A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, obs1A, false);
+                    }
                 }
                 if (isSegmentIntersectingWithObstacles( a, obs1B, obstacle) && !edgeExist(netId, layerId, a, obs1B) ){
                     // connectWithObstacle(netId, layerId, a, obs1B, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, a, obs1B)){
-                    _rGraph.addOASGEdge(netId, layerId, a, obs1B, false);
+                    if(!checkWithVias(netId, layerId, a, obs1B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, obs1B, false);
+                    }
                 }
                 if (isSegmentIntersectingWithObstacles( b, obs2A, obstacle) && !edgeExist(netId, layerId, b, obs2A) ){
                     // connectWithObstacle(netId, layerId, b, obs2A, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, b, obs2A)){
-                    _rGraph.addOASGEdge(netId, layerId, b, obs2A, false);
+                    if(!checkWithVias(netId, layerId, b, obs2A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, obs2A, false);
+                    }
                 }
                 if (isSegmentIntersectingWithObstacles( b, obs2B, obstacle)&& !edgeExist(netId, layerId, b, obs2B)){
                     // connectWithObstacle(netId, layerId, b, obs2B, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, b, obs2B)){
-                    _rGraph.addOASGEdge(netId, layerId, b, obs2B, false);
+                    if(!checkWithVias(netId, layerId, b, obs2B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, obs2B, false);
+                    }
                 }
+                redundantObsNode.push_back(make_pair(obs1A,obs1B));
+                redundantObsNode.push_back(make_pair(obs2A,obs2B));
             }
             else{
                 if (isSegmentIntersectingWithObstacles( b, obs1A, obstacle) && !edgeExist(netId, layerId, b, obs1A)){
                     // connectWithObstacle(netId, layerId, b, obs1A, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, b, obs1A)){
-                    _rGraph.addOASGEdge(netId, layerId, b, obs1A, false);
+                    if(!checkWithVias(netId, layerId, b, obs1A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, obs1A, false);
+                    }
                 }
                 if (isSegmentIntersectingWithObstacles( b, obs1B, obstacle) && !edgeExist(netId, layerId, b, obs1B)){
                     // connectWithObstacle(netId, layerId, b, obs1B, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, b, obs1B)){
-                    _rGraph.addOASGEdge(netId, layerId, b, obs1B, false);
+                    if(!checkWithVias(netId, layerId, b, obs1B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, obs1B, false);
+                    }
                 }
                 if (isSegmentIntersectingWithObstacles( a, obs2A, obstacle) && !edgeExist(netId, layerId, a, obs2A)){
                     // connectWithObstacle(netId, layerId, a, obs2A, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, a, obs2A)){
-                    _rGraph.addOASGEdge(netId, layerId, a, obs2A, false);
+                    if(!checkWithVias(netId, layerId, a, obs2A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, obs2A, false);
+                    }
                 }
                 if (isSegmentIntersectingWithObstacles( a, obs2B, obstacle) && !edgeExist(netId, layerId, a, obs2B)){
                     // connectWithObstacle(netId, layerId, a, obs2B, obstacle);
                 }
                 else if(!edgeExist(netId, layerId, a, obs2B)){
-                    _rGraph.addOASGEdge(netId, layerId, a, obs2B, false);
+                    if(!checkWithVias(netId, layerId, a, obs2B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, obs2B, false);
+                    }
                 }
+                redundantObsNode.push_back(make_pair(obs1A,obs1B));
+                redundantObsNode.push_back(make_pair(obs2A,obs2B));
+            }
+        }
+    }
+}
+
+void GlobalMgr::connectWithVia(int netId, int layerId, OASGNode* a, OASGNode* b,vector<vector<OASGNode*> > ViaCluster){
+    
+    // 紀錄這兩個點跟哪兩個
+    
+    int numVias = ViaCluster.size();
+    
+    bool vias1IsTested = false;
+    bool alreadyDealWtihAVias = false;
+    
+    bool inTouchWithThisVias = false;
+    for(int i = 0; i< numVias;++i){
+        if(alreadyDealWtihAVias == true){
+            break;
+        }
+        inTouchWithThisVias = false;
+        OASGNode* vias1A;
+        OASGNode* vias1B;
+        OASGNode* vias2A;
+        OASGNode* vias2B;
+
+        int numVertices = ViaCluster[i].size();
+        
+        for (int j = 0; j< numVertices; j++){
+            
+            if(j == (numVertices-1)){
+                if(!vias1IsTested && doIntersect(a, b, ViaCluster[i][numVertices-1], ViaCluster[i][0])){
+                    inTouchWithThisVias = true;
+                    vias1A = ViaCluster[i][numVertices-1];
+                    vias1B = ViaCluster[i][0];
+                    vias1IsTested = true;
+                }
+                else if(vias1IsTested && doIntersect(a, b, ViaCluster[i][numVertices-1], ViaCluster[i][0])){
+                    inTouchWithThisVias = true;
+                    vias2A = ViaCluster[i][numVertices-1];
+                    vias2B = ViaCluster[i][0];
+                }
+            }
+            else{
+                if(!vias1IsTested && doIntersect(a, b, ViaCluster[i][j], ViaCluster[i][j+1])){
+                    inTouchWithThisVias = true;
+                    vias1A = ViaCluster[i][j];
+                    vias1B = ViaCluster[i][j+1];
+                    vias1IsTested = true;
+                }
+                else if(vias1IsTested && doIntersect(a, b, ViaCluster[i][j], ViaCluster[i][j+1])){
+                    inTouchWithThisVias = true;
+                    vias2A = ViaCluster[i][j];
+                    vias2B = ViaCluster[i][j+1];
+                }
+            }
+        }
+        
+        if(inTouchWithThisVias == true){
+            alreadyDealWtihAVias = true;
+
+            // for(int nodeId = 0; nodeId < (ViaCluster[i].size()-1); ++nodeId){
+            //     _rGraph.addOASGEdge(netId, layerId, ViaCluster[i][nodeId], ViaCluster[i][nodeId+1], false);
+            // }
+            // _rGraph.addOASGEdge(netId, layerId, ViaCluster[i][0], ViaCluster[i][(ViaCluster[i].size()-1)], false);
+
+            double scanX = a->x();
+            double scanY = a->y(); 
+            double dis1Aa = sqrt(pow(vias1A->x() - scanX, 2) + pow(vias1A->y() - scanY, 2));
+            double dis1Ba = sqrt(pow(vias1B->x() - scanX, 2) + pow(vias1B->y() - scanY, 2));
+            double dis2Aa = sqrt(pow(vias2A->x() - scanX, 2) + pow(vias2A->y() - scanY, 2));
+            double dis2Ba = sqrt(pow(vias2B->x() - scanX, 2) + pow(vias2B->y() - scanY, 2));
+            double minDis = std::min({dis1Aa , dis2Aa, dis1Ba, dis2Ba}); 
+            if (minDis == dis1Aa || minDis == dis1Ba){
+                if (isSegmentIntersectingWithObstacles( a, vias1A, obstacle) && !edgeExist(netId, layerId, a, vias1A)){
+                    // connectWithObstacle(netId, layerId, a, vias1A, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, a, vias1A)){
+                    //if(!checkWithVias(netId, layerId, a, vias1A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, vias1A, false);
+                    //}
+                }
+                if (isSegmentIntersectingWithObstacles( a, vias1B, obstacle) && !edgeExist(netId, layerId, a, vias1B) ){
+                    // connectWithObstacle(netId, layerId, a, vias1B, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, a, vias1B)){
+                    //if(!checkWithVias(netId, layerId, a, vias1B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, vias1B, false);
+                    //}
+                }
+                if (isSegmentIntersectingWithObstacles( b, vias2A, obstacle) && !edgeExist(netId, layerId, b, vias2A) ){
+                    // connectWithObstacle(netId, layerId, b, obs2A, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, b, vias2A)){
+                    //if(!checkWithVias(netId, layerId, b, vias2A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, vias2A, false);
+                    //}
+                }
+                if (isSegmentIntersectingWithObstacles( b, vias2B, obstacle)&& !edgeExist(netId, layerId, b, vias2B)){
+                    // connectWithObstacle(netId, layerId, b, vias2B, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, b, vias2B)){
+                    //if(!checkWithVias(netId, layerId, b, vias2B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, vias2B, false);
+                    //}
+                }
+                redundantViasNode.push_back(make_pair(vias1A,vias1B));
+                redundantViasNode.push_back(make_pair(vias2A,vias2B));
+            }
+            else{
+                if (isSegmentIntersectingWithObstacles( b, vias1A, obstacle) && !edgeExist(netId, layerId, b, vias1A)){
+                    // connectWithObstacle(netId, layerId, b, vias1A, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, b, vias1A)){
+                    //if(!checkWithVias(netId, layerId, b, vias1A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, vias1A, false);
+                    //}
+                }
+                if (isSegmentIntersectingWithObstacles( b, vias1B, obstacle) && !edgeExist(netId, layerId, b, vias1B)){
+                    // connectWithObstacle(netId, layerId, b, vias1B, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, b, vias1B)){
+                    //if(!checkWithVias(netId, layerId, b, vias1B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, b, vias1B, false);
+                    //}
+                }
+                if (isSegmentIntersectingWithObstacles( a, vias2A, obstacle) && !edgeExist(netId, layerId, a, vias2A)){
+                    // connectWithObstacle(netId, layerId, a, vias2A, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, a, vias2A)){
+                    //if(!checkWithVias(netId, layerId, a, vias2A, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, vias2A, false);
+                    //}
+                }
+                if (isSegmentIntersectingWithObstacles( a, vias2B, obstacle) && !edgeExist(netId, layerId, a, vias2B)){
+                    // connectWithObstacle(netId, layerId, a, vias2B, obstacle);
+                }
+                else if(!edgeExist(netId, layerId, a, vias2B)){
+                    //if(!checkWithVias(netId, layerId, a, vias2B, viaOASGNodes)){
+                        _rGraph.addOASGEdge(netId, layerId, a, vias2B, false);
+                    //}
+                }
+                redundantViasNode.push_back(make_pair(vias1A,vias1B));
+                redundantViasNode.push_back(make_pair(vias2A,vias2B));
             }
         }
     }
@@ -353,10 +535,9 @@ bool GlobalMgr::checkWithVias(int netId, int layerId, OASGNode* a, OASGNode* b, 
     bool edgeTouchVia = false;
     for(int i = 0; i < viaOASGNodes.size();++i){
         if(netId == i) continue;
-        int numVias = viaOASGNodes[i].size();
-        if(isSegmentIntersectingWithObstacles(a,b,viaOASGNodes[i])){
-
-            connectWithObstacle(netId, layerId, a,b,viaOASGNodes[i]);
+        //int numVias = viaOASGNodes[i].size();
+        if(isSegmentIntersectingWithVias(a,b,viaOASGNodes[i],i)){
+            connectWithVia(netId, layerId, a,b,viaOASGNodes[i]);
             edgeTouchVia = true;
         }
     }    
@@ -410,44 +591,68 @@ void GlobalMgr::buildOASG(bool case5) {
     
     //Create viaOASGNodes
     //3 dim, 1dim =  netId, 2dim = Source vias and then targets' vias, 3dim = 4points
-    vector<vector<vector<OASGNode*> > > viaOASGNodes;
-    if (case5 == false) {
-    viaOASGNodes.resize(_rGraph.numNets());
-    for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
-        int viaNodeId = 0;
-        vector<vector<OASGNode*>> tempViaOASGNodes;
-        tempViaOASGNodes.resize((1+_db.vNet(netId)->numTPorts()), vector<OASGNode*>(4, nullptr));
-        // Step1: Create Source Via        
-        double minX = _db.vNet(netId)->sourcePort()->boundPolygon()->minX();
-        double minY = _db.vNet(netId)->sourcePort()->boundPolygon()->minY();
-        double maxX = _db.vNet(netId)->sourcePort()->boundPolygon()->maxX();
-        double maxY = _db.vNet(netId)->sourcePort()->boundPolygon()->maxY();
-        tempViaOASGNodes[viaNodeId][0] = _rGraph.addOASGNode(netId, minX, minY, OASGNodeType::MIDDLE);
-        tempViaOASGNodes[viaNodeId][1] = _rGraph.addOASGNode(netId, maxX, minY, OASGNodeType::MIDDLE);
-        tempViaOASGNodes[viaNodeId][2] = _rGraph.addOASGNode(netId, maxX, maxY, OASGNodeType::MIDDLE);
-        tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
-        ++viaNodeId ;
-        //Secondly, check with the target viaclusters
-        for(size_t tPortId = 0; tPortId < _db.vNet(netId)->numTPorts(); ++ tPortId) {
-            double minX = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->minX();
-            double minY = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->minY();
-            double maxX = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->maxX();
-            double maxY = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->maxY();
-            tempViaOASGNodes[viaNodeId][0] = _rGraph.addOASGNode(netId, minX, minY, OASGNodeType::MIDDLE);
-            tempViaOASGNodes[viaNodeId][1] = _rGraph.addOASGNode(netId, maxX, minY, OASGNodeType::MIDDLE);
-            tempViaOASGNodes[viaNodeId][2] = _rGraph.addOASGNode(netId, maxX, maxY, OASGNodeType::MIDDLE);
-            tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
-            ++viaNodeId;
+    viaOASGNodes.clear();
+    addViasRoundEdges.clear();
+    if (1/*case5 == false*/) {
+        viaOASGNodes.resize(_rGraph.numNets());
+        for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
+            vector<bool> addViasRoundEdges_temp;
+            int viaNodeId = 0;
+            vector<vector<OASGNode*>> tempViaOASGNodes;
+            // tempViaOASGNodes.resize((1+_db.vNet(netId)->numTPorts()), vector<OASGNode*>(4, nullptr));
+            // Step1: Create Source Via        
+            // double minX = _db.vNet(netId)->sourcePort()->boundPolygon()->minX();
+            // double minY = _db.vNet(netId)->sourcePort()->boundPolygon()->minY();
+            // double maxX = _db.vNet(netId)->sourcePort()->boundPolygon()->maxX();
+            // double maxY = _db.vNet(netId)->sourcePort()->boundPolygon()->maxY();
+            // tempViaOASGNodes[viaNodeId][0] = _rGraph.addOASGNode(netId, minX, minY, OASGNodeType::MIDDLE);
+            // tempViaOASGNodes[viaNodeId][1] = _rGraph.addOASGNode(netId, maxX, minY, OASGNodeType::MIDDLE);
+            // tempViaOASGNodes[viaNodeId][2] = _rGraph.addOASGNode(netId, maxX, maxY, OASGNodeType::MIDDLE);
+            // tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
+            vector<OASGNode*> temp_Snodes;
+            for(int vtxId = 0; vtxId < _db.vNet(netId)->sourcePort()->boundPolygon()->numVtcs(); vtxId++){
+                double X = _db.vNet(netId)->sourcePort()->boundPolygon()->vtxX(vtxId);
+                double Y = _db.vNet(netId)->sourcePort()->boundPolygon()->vtxY(vtxId);
+                OASGNode* n = _rGraph.addOASGNode(netId, X, Y, OASGNodeType::MIDDLE);
+                temp_Snodes.push_back(n);
+            }
+            tempViaOASGNodes.push_back(temp_Snodes);
+            ++viaNodeId ;
+            addViasRoundEdges_temp.push_back(false);
+            //Secondly, check with the target Viaclusters
+            for(size_t tPortId = 0; tPortId < _db.vNet(netId)->numTPorts(); ++ tPortId) {
+                // double minX = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->minX();
+                // double minY = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->minY();
+                // double maxX = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->maxX();
+                // double maxY = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->maxY();
+                // tempViaOASGNodes[viaNodeId][0] = _rGraph.addOASGNode(netId, minX, minY, OASGNodeType::MIDDLE);
+                // tempViaOASGNodes[viaNodeId][1] = _rGraph.addOASGNode(netId, maxX, minY, OASGNodeType::MIDDLE);
+                // tempViaOASGNodes[viaNodeId][2] = _rGraph.addOASGNode(netId, maxX, maxY, OASGNodeType::MIDDLE);
+                // tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
+                vector<OASGNode*> temp_Tnodes;
+                for(int vtxId = 0; vtxId < _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->numVtcs(); vtxId++){
+                    double X = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->vtxX(vtxId);
+                    double Y = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->vtxY(vtxId);
+                    OASGNode* n = _rGraph.addOASGNode(netId, X, Y, OASGNodeType::MIDDLE);
+                    temp_Tnodes.push_back(n);
+                }
+                tempViaOASGNodes.push_back(temp_Tnodes);
+                ++viaNodeId;
+                addViasRoundEdges_temp.push_back(false);
+            }
+            viaOASGNodes[netId] = tempViaOASGNodes;
+            addViasRoundEdges.push_back(addViasRoundEdges_temp);
         }
-        viaOASGNodes[netId] = tempViaOASGNodes;
-    }
     }
 
     for (size_t layerId = 0; layerId < _rGraph.numLayers(); ++ layerId){
         //Step 0: 先把每層的Middle 的OASG Node建完(因為每條Net的OASG Node都不一樣，所以直接包在裡面)
         //Obs Node的順序是1左下、2右下、3右上、4左上
         for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId){
-
+            //清空obsOASGEdge，每條net都有不同的redundant，最後round obs EDGE 如果有redundant，就不加入
+            redundantObsNode.clear();
+            redundantViasNode.clear();
+            
             // if(netId == 2 && case5 == true){
             //     _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), _rGraph.targetOASGNode(netId, 0,layerId), false);
             //     _rGraph.addOASGEdge(netId, layerId, _rGraph.targetOASGNode(netId, 0,layerId), _rGraph.targetOASGNode(netId, 1,layerId), false);
@@ -465,6 +670,14 @@ void GlobalMgr::buildOASG(bool case5) {
             for (int i = 0; i < _db.numObstacles(layerId); ++i){
                 addObsRoundEdges[i] = false;
             }
+
+            //reset addViasRoundEdges
+            for(int i = 0; i < addViasRoundEdges.size(); i++){
+                for(int j = 0; j < addViasRoundEdges[i].size();j++){
+                    addViasRoundEdges[i][j] = false;
+                }
+            }
+            
 
             //這裡要判斷OASG Edges有沒有重複加入
             //要確認這裡有沒有resize成功
@@ -497,6 +710,16 @@ void GlobalMgr::buildOASG(bool case5) {
                     }
                     
                 }
+            }
+
+            //平:這邊為了方便直接把obsNodes存到GlobalMgr.h裡面的vector<vector<OASGNode*>> obstacle ，要優化的話可以改掉obsNodes，但有些function要改IO
+            obstacle.clear();
+            for(int i = 0; i < obsNodes.size();++i){
+                vector<OASGNode*> temp;
+                for(int j = 0; j < obsNodes[i].size(); ++j){
+                    temp.push_back(obsNodes[i][j]);
+                }
+                obstacle.push_back(temp);
             }
 
             // int numScanNode = 1 + _db.vNet(netId)->numTPorts() + (4 * _db.numObstacles(layerId));
@@ -621,15 +844,69 @@ void GlobalMgr::buildOASG(bool case5) {
                 }
                 
             }
+            //obstacle round edge
             //這裡不用判斷Edge有沒有重複，因為是第一次加入
             for(int obsId = 0; obsId < _db.numObstacles(layerId); ++obsId){
                 if(addObsRoundEdges[obsId] == true){
                     cout << "In Layer " << layerId << " Net " << netId << " Touched with the Xth obstacle " << obsId << endl;
                     int numPolyVtcs = _db.vObstacle(layerId, obsId)->vShape(0)->numBPolyVtcs();
+                    bool redundant = false;
                     for(int vtxId = 0; vtxId < (numPolyVtcs - 1); ++vtxId){
-                        _rGraph.addOASGEdge(netId, layerId, obsNodes[obsId][vtxId], obsNodes[obsId][vtxId+1], false);
+                        redundant = false;
+                        for(int i = 0; i < redundantObsNode.size(); i++){
+                            OASGNode* n1 = redundantObsNode[i].first;
+                            OASGNode* n2 = redundantObsNode[i].second;
+                            if((obsNodes[obsId][vtxId] == n1 && obsNodes[obsId][vtxId+1] == n2) ||(obsNodes[obsId][vtxId] == n2 && obsNodes[obsId][vtxId+1] == n1)){
+                                redundant = true;
+                                break;
+                            }
+                        }
+                        if(!redundant) _rGraph.addOASGEdge(netId, layerId, obsNodes[obsId][vtxId], obsNodes[obsId][vtxId+1], false);
                     }
-                    _rGraph.addOASGEdge(netId, layerId, obsNodes[obsId][0], obsNodes[obsId][numPolyVtcs - 1], false);
+                    redundant = false;
+                    for(int i = 0; i < redundantObsNode.size(); i++){
+                        OASGNode* n1 = redundantObsNode[i].first;
+                        OASGNode* n2 = redundantObsNode[i].second;
+                        if((obsNodes[obsId][0] == n1 && obsNodes[obsId][numPolyVtcs - 1] == n2) ||(obsNodes[obsId][0] == n2 && obsNodes[obsId][numPolyVtcs - 1] == n1) ){
+                            redundant = true;
+                            break;
+                        }
+                    }
+                    if(!redundant) _rGraph.addOASGEdge(netId, layerId, obsNodes[obsId][0], obsNodes[obsId][numPolyVtcs - 1], false);
+                }
+            }
+            //vias cluster round edge
+            //這裡不用判斷Edge有沒有重複，因為是第一次加入
+            for(int viaNetId = 0; viaNetId < addViasRoundEdges.size(); ++viaNetId){
+                if(viaNetId == netId) continue;
+                for(int viaId = 0 ; viaId < addViasRoundEdges[viaNetId].size(); ++ viaId){
+                    if(addViasRoundEdges[viaNetId][viaId] == true){
+                        cout << "In Layer " << layerId << " Net " << netId << " Touched with the Xth Viacluster " << viaId << "of netId : " << viaNetId << endl;
+                        int numPolyVtcs = viaOASGNodes[viaNetId][viaId].size();
+                        bool redundant = false;
+                        for(int vtxId = 0; vtxId < (numPolyVtcs - 1); ++vtxId){
+                            redundant = false;
+                            for(int i = 0; i < redundantViasNode.size(); i++){
+                                OASGNode* n1 = redundantViasNode[i].first;
+                                OASGNode* n2 = redundantViasNode[i].second;
+                                if((viaOASGNodes[viaNetId][viaId][vtxId] == n1 && viaOASGNodes[viaNetId][viaId][vtxId+1] == n2) ||(viaOASGNodes[viaNetId][viaId][vtxId] == n2 && viaOASGNodes[viaNetId][viaId][vtxId+1] == n1)){
+                                    redundant = true;
+                                    break;
+                                }
+                            }
+                            if(!redundant) _rGraph.addOASGEdge(netId, layerId, viaOASGNodes[viaNetId][viaId][vtxId], viaOASGNodes[viaNetId][viaId][vtxId+1], false);
+                        }
+                        redundant = false;
+                        for(int i = 0; i < redundantViasNode.size(); i++){
+                            OASGNode* n1 = redundantViasNode[i].first;
+                            OASGNode* n2 = redundantViasNode[i].second;
+                            if((viaOASGNodes[viaNetId][viaId][0] == n1 && viaOASGNodes[viaNetId][viaId][numPolyVtcs - 1] == n2) ||(viaOASGNodes[viaNetId][viaId][0] == n2 && viaOASGNodes[viaNetId][viaId][numPolyVtcs - 1] == n1) ){
+                                redundant = true;
+                                break;
+                            }
+                        }
+                        if(!redundant) _rGraph.addOASGEdge(netId, layerId, viaOASGNodes[viaNetId][viaId][0], viaOASGNodes[viaNetId][viaId][numPolyVtcs - 1], false);
+                    }
                 }
             }
         }
@@ -870,6 +1147,23 @@ void GlobalMgr::plotRGraph() {
                         _plot.drawLine(e->sNode()->x(), e->sNode()->y(), e->tNode()->x(), e->tNode()->y(), e->netId(), layId, 1.0);
                     }
                 }
+            }
+        }
+    }
+}
+
+void GlobalMgr::plotRGraphPath() {
+    // _plot.startPlot(_db.boardWidth()*_db.numLayers(), _db.boardHeight());
+    for (size_t twoPinNetId = 0; twoPinNetId < _rGraph.num2PinNets(); ++ twoPinNetId) {
+        for (size_t layId = 0; layId < _rGraph.numLayers(); ++ layId) {
+            for (size_t RGEdgeId = 0; RGEdgeId < _rGraph.numRGEdges(twoPinNetId, layId); ++ RGEdgeId) {
+                RGEdge* rgEdge = _rGraph.vEdge(twoPinNetId, layId, RGEdgeId);
+                
+                    for (size_t OASGEdgeId = 0; OASGEdgeId < rgEdge->numEdges(); ++ OASGEdgeId) {
+                        OASGEdge* e = rgEdge->vEdge(OASGEdgeId);
+                        _plot.drawLine(e->sNode()->x(), e->sNode()->y(), e->tNode()->x(), e->tNode()->y(), e->netId(), layId, 1.0);
+                    }
+                
             }
         }
     }
@@ -1895,20 +2189,20 @@ void GlobalMgr::voltageDemandAssignment() {
     */
 
     // add traces to each net
-    // for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
-    //     for (size_t layId = 0; layId < _rGraph.numLayers(); ++ layId) {
-    //         for (size_t pEdgeId = 0; pEdgeId < _rGraph.numPlaneOASGEdges(netId, layId); ++ pEdgeId) {
-    //             OASGEdge* e = _rGraph.vPlaneOASGEdge(netId, layId, pEdgeId);
-    //             // if (e->current() > 0) {
-    //                 Segment* segment = edge2Segment(e);
-    //                 // segment->plot(netId, layId);
-    //                 _db.vNet(netId)->addSegment(segment, layId);
-    //             // }
-    //         }
-    //     }
-    // }
-    // plotCurrentPaths();
-    // assert(false);
+    for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
+        for (size_t layId = 0; layId < _rGraph.numLayers(); ++ layId) {
+            for (size_t pEdgeId = 0; pEdgeId < _rGraph.numPlaneOASGEdges(netId, layId); ++ pEdgeId) {
+                OASGEdge* e = _rGraph.vPlaneOASGEdge(netId, layId, pEdgeId);
+                // if (e->current() > 0) {
+                    Segment* segment = edge2Segment(e);
+                    // segment->plot(netId, layId);
+                    _db.vNet(netId)->addSegment(segment, layId);
+                // }
+            }
+        }
+    }
+    //plotCurrentPaths();
+    assert(false);
 
     for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
         VoltEigen solver(_rGraph.numNPortOASGNodes(netId));
@@ -2972,7 +3266,7 @@ void GlobalMgr::genCapConstrs() {
                     // port bounding polygon constraints from other nets
                     // Bug: if the port is not connected on the layer, its bounding polygon should be ignored
                     for(size_t T_netId = 0; T_netId < _rGraph.numNets(); ++ T_netId) {
-                        //if (T_netId != S_netId) {
+                        //if (T_netId != e1->netId()) {
                             pair<double, double> S2, T2;
 
                             Polygon* bPolygon = _db.vNet(T_netId)->sourcePort()->boundPolygon();
