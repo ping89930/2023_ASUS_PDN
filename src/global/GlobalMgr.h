@@ -42,12 +42,13 @@ class GlobalMgr {
         void buildOASG(bool case5);
         void buildOASGXObs();
 
-        bool isSegmentIntersectingWithObstacles(OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > obstacle);
+        //平:0131改
+        bool isSegmentIntersectingWithObstacles(OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > obstacle, size_t &obsId);
         bool onSegment(OASGNode* p, OASGNode* q, OASGNode* r);
         int orientation(OASGNode* p, OASGNode* q, OASGNode* r);
         bool doIntersect(OASGNode* p1, OASGNode* q1, OASGNode* p2, OASGNode* q2);
-        void connectWithObstacle(int netId, int layerId,OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > obstacle);
-        bool checkWithVias(int netId, int layerId, OASGNode* a, OASGNode* b, vector<vector<vector<OASGNode*>>> viaOASGNodes);
+        void connectWithObstacle(int netId, int layerId,OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > obstacle, size_t obsId);
+        bool checkWithVias(int netId, int layerId, OASGNode* a, OASGNode* b, vector<vector<vector<OASGNode*>>> viaOASGNodes, size_t viaNetId, size_t viaId);
         //用來存每一層有哪一個Obstacle要繞Rounding Edges
         vector<bool> addObsRoundEdges;
         //用來存這一層中有哪些Net已經被建立過了。裡面會存兩個座標的(xMin, xMax, yMin, yMax)
@@ -99,14 +100,14 @@ class GlobalMgr {
         //平:建立redundant OASGEdge 
         vector<pair<OASGNode*,OASGNode*>> redundantObsNode;
         vector<pair<OASGNode*,OASGNode*>> redundantViasNode;
-        bool isSegmentIntersectingWithVias(OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster, size_t netId);
         vector<vector<bool>> addViasRoundEdges; //[netId][viaId]
-        void connectWithVia(int netId, int layerId,OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster, size_t viaNetId);
+        bool isSegmentIntersectingWithVias(OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster,size_t netId, size_t& viaNetId, size_t& viaId);
+        void connectWithVia(int netId, int layerId,OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster, size_t viaNetId, size_t viaId);
         vector<vector<vector<OASGNode*> > > viaOASGNodes;
         vector<vector<OASGNode*>> obstacle;
-        vector<bool> alreadyDealWithAObs;
-        vector<vector<bool>> alreadyDealWithAVias;
-        void resetAlreadyDeal();
+        //vector<bool> alreadyDealWithAObs;
+        //vector<vector<bool>> alreadyDealWithAVias;
+        //void resetAlreadyDeal();
         
     private:
         double oldViaEdgeArea(OASGEdge* e);
