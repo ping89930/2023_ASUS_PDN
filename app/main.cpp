@@ -183,7 +183,7 @@ int main(int argc, char* argv[]){
     globalMgr.buildOASG(string(argv[3]).find('5') != std::string::npos);
 
     // // globalMgr.buildOASGXObs();
-    //globalMgr.plotOASG();
+    globalMgr.plotOASG();
     
     if (string(argv[3]).find('5') != std::string::npos) {
     globalMgr.genCrossConstrs();
@@ -196,7 +196,7 @@ int main(int argc, char* argv[]){
     // // globalMgr.voltageAssignment();
     // /*
     //globalMgr.plotOASG();
-    globalMgr.plotRGraphPath();
+    //globalMgr.plotRGraphPath();
     globalMgr.genCapConstrs();
     
 

@@ -101,9 +101,12 @@ class GlobalMgr {
         vector<pair<OASGNode*,OASGNode*>> redundantViasNode;
         bool isSegmentIntersectingWithVias(OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster, size_t netId);
         vector<vector<bool>> addViasRoundEdges; //[netId][viaId]
-        void connectWithVia(int netId, int layerId,OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster);
+        void connectWithVia(int netId, int layerId,OASGNode* a, OASGNode* b, vector<vector<OASGNode*> > ViaCluster, size_t viaNetId);
         vector<vector<vector<OASGNode*> > > viaOASGNodes;
         vector<vector<OASGNode*>> obstacle;
+        vector<bool> alreadyDealWithAObs;
+        vector<vector<bool>> alreadyDealWithAVias;
+        void resetAlreadyDeal();
         
     private:
         double oldViaEdgeArea(OASGEdge* e);
