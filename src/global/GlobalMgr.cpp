@@ -207,18 +207,13 @@ bool GlobalMgr::isSegmentIntersectingWithObstacles(OASGNode* a, OASGNode* b, vec
     for(int i = 0; i< numObs;++i){
         if(i == obsId) continue;
         int numVertices = obstacle[i].size();
-        for (int j = 0; j< numVertices-1;++j){
-            if(doIntersect(a, b, obstacle[i][j], obstacle[i][j+1])){
+        for (int j = 0; j< numVertices;++j){
+            if(doIntersect(a, b, obstacle[i][j%numVertices], obstacle[i][(j+1)%numVertices])){
                 addObsRoundEdges[i] = true;
                 obsId = i;
                 return true;
             }
         }
-        if(doIntersect(a, b, obstacle[i][0], obstacle[i][numVertices-1])){
-            addObsRoundEdges[i] = true;
-            obsId = i;
-            return true;
-        } 
     }
     return false;
 }
@@ -229,20 +224,14 @@ bool GlobalMgr::isSegmentIntersectingWithVias(OASGNode* a, OASGNode* b, vector<v
     for(int i = 0; i< numvias;++i){
         if(netId == viaNetId && viaId == i) continue;
         int numVertices = ViaCluster[i].size();
-        for (int j = 0; j< numVertices-1;++j){
-            if(doIntersect(a, b, ViaCluster[i][j], ViaCluster[i][j+1])){
+        for (int j = 0; j< numVertices;++j){
+            if(doIntersect(a, b, ViaCluster[i][j%numVertices], ViaCluster[i][(j+1)%numVertices])){
                 viaNetId = netId;
                 viaId = i;
                 addViasRoundEdges[netId][i] = true;
                 return true;
             }
         }
-        if(doIntersect(a, b, ViaCluster[i][0], ViaCluster[i][numVertices-1])){
-            viaNetId = netId;
-            viaId = i;
-            addViasRoundEdges[netId][i] = true;
-            return true;
-        } 
     }
 
     return false;
@@ -277,33 +266,17 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
         int numVertices = obstacle[i].size();
         
         for (int j = 0; j< numVertices; j++){
-            
-            if(j == (numVertices-1)){
-                if(!obs1IsTested && doIntersect(a, b, obstacle[i][numVertices-1], obstacle[i][0])){
-                    inTouchWithThisObs = true;
-                    obs1A = obstacle[i][numVertices-1];
-                    obs1B = obstacle[i][0];
-                    obs1IsTested = true;
-                }
-                else if(obs1IsTested && doIntersect(a, b, obstacle[i][numVertices-1], obstacle[i][0])){
-                    inTouchWithThisObs = true;
-                    obs2A = obstacle[i][numVertices-1];
-                    obs2B = obstacle[i][0];
-                }
+            if(!obs1IsTested && doIntersect(a, b, obstacle[i][j%numVertices], obstacle[i][(j+1)%numVertices])){
+                inTouchWithThisObs = true;
+                obs1A = obstacle[i][j%numVertices];
+                obs1B = obstacle[i][(j+1)%numVertices];
+                obs1IsTested = true;
             }
-            else{
-                if(!obs1IsTested && doIntersect(a, b, obstacle[i][j], obstacle[i][j+1])){
-                    inTouchWithThisObs = true;
-                    obs1A = obstacle[i][j];
-                    obs1B = obstacle[i][j+1];
-                    obs1IsTested = true;
-                }
-                else if(obs1IsTested && doIntersect(a, b, obstacle[i][j], obstacle[i][j+1])){
-                    inTouchWithThisObs = true;
-                    obs2A = obstacle[i][j];
-                    obs2B = obstacle[i][j+1];
-                }
-            }
+            else if(obs1IsTested && doIntersect(a, b, obstacle[i][j%numVertices], obstacle[i][(j+1)%numVertices])){
+                inTouchWithThisObs = true;
+                obs2A = obstacle[i][j%numVertices];
+                obs2B = obstacle[i][(j+1)%numVertices];
+            }   
         }
         
         if(inTouchWithThisObs == true){
@@ -329,7 +302,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, a, obs1A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, obs1A)){
-                    if(!checkWithVias(netId, layerId, a, obs1A, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, obs1A, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, obs1A, false);
                     }
                 }
@@ -340,7 +313,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, a, obs1B, obstacle,target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, obs1B)){
-                    if(!checkWithVias(netId, layerId, a, obs1B, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, obs1B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, obs1B, false);
                     }
                 }
@@ -351,7 +324,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, b, obs2A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, obs2A)){
-                    if(!checkWithVias(netId, layerId, b, obs2A, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, obs2A, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, obs2A, false);
                     }
                 }
@@ -362,7 +335,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, b, obs2B, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, obs2B)){
-                    if(!checkWithVias(netId, layerId, b, obs2B, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, obs2B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, obs2B, false);
                     }
                 }
@@ -377,7 +350,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, b, obs1A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, obs1A)){
-                    if(!checkWithVias(netId, layerId, b, obs1A, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, obs1A, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, obs1A, false);
                     }
                 }
@@ -388,7 +361,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, b, obs1B, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, obs1B)){
-                    if(!checkWithVias(netId, layerId, b, obs1B, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, obs1B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, obs1B, false);
                     }
                 }
@@ -399,7 +372,7 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, a, obs2A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, obs2A)){
-                    if(!checkWithVias(netId, layerId, a, obs2A, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, obs2A, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, obs2A, false);
                     }
                 }
@@ -410,19 +383,18 @@ void GlobalMgr::connectWithObstacle(int netId, int layerId, OASGNode* a, OASGNod
                     connectWithObstacle(netId, layerId, a, obs2B, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, obs2B)){
-                    if(!checkWithVias(netId, layerId, a, obs2B, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, obs2B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, obs2B, false);
                     }
                 }
                 redundantObsNode.push_back(make_pair(obs1A,obs1B));
                 redundantObsNode.push_back(make_pair(obs2A,obs2B));
             }
-            //alreadyDealWithAObs[i] = true;
         }
     //}
 }
 
-void GlobalMgr::connectWithVia(int netId, int layerId, OASGNode* a, OASGNode* b, vector<vector<OASGNode*>> ViaCluster, size_t viaNetId, size_t viaId){
+void GlobalMgr::connectWithVia(int netId, int layerId, OASGNode* a, OASGNode* b, vector<vector<OASGNode*>> ViaCluster, vector<vector<OASGNode*> > obstacle, size_t viaNetId, size_t viaId){
     
     // 紀錄這兩個點跟哪兩個
     //int numVias = ViaCluster.size();
@@ -446,37 +418,20 @@ void GlobalMgr::connectWithVia(int netId, int layerId, OASGNode* a, OASGNode* b,
         int numVertices = ViaCluster[i].size();
         
         for (int j = 0; j< numVertices; j++){
-            
-            if(j == (numVertices-1)){
-                if(!vias1IsTested && doIntersect(a, b, ViaCluster[i][numVertices-1], ViaCluster[i][0])){
+                if(!vias1IsTested && doIntersect(a, b, ViaCluster[i][j%numVertices], ViaCluster[i][(j+1)%numVertices])){
                     inTouchWithThisVias = true;
-                    vias1A = ViaCluster[i][numVertices-1];
-                    vias1B = ViaCluster[i][0];
+                    vias1A = ViaCluster[i][j%numVertices];
+                    vias1B = ViaCluster[i][(j+1)%numVertices];
                     vias1IsTested = true;
                 }
-                else if(vias1IsTested && doIntersect(a, b, ViaCluster[i][numVertices-1], ViaCluster[i][0])){
+                else if(vias1IsTested && doIntersect(a, b, ViaCluster[i][j%numVertices], ViaCluster[i][(j+1)%numVertices])){
                     inTouchWithThisVias = true;
-                    vias2A = ViaCluster[i][numVertices-1];
-                    vias2B = ViaCluster[i][0];
+                    vias2A = ViaCluster[i][j%numVertices];
+                    vias2B = ViaCluster[i][(j+1)%numVertices];
                 }
-            }
-            else{
-                if(!vias1IsTested && doIntersect(a, b, ViaCluster[i][j], ViaCluster[i][j+1])){
-                    inTouchWithThisVias = true;
-                    vias1A = ViaCluster[i][j];
-                    vias1B = ViaCluster[i][j+1];
-                    vias1IsTested = true;
-                }
-                else if(vias1IsTested && doIntersect(a, b, ViaCluster[i][j], ViaCluster[i][j+1])){
-                    inTouchWithThisVias = true;
-                    vias2A = ViaCluster[i][j];
-                    vias2B = ViaCluster[i][j+1];
-                }
-            }
         }
         
         if(inTouchWithThisVias == true){
-            
 
             // for(int nodeId = 0; nodeId < (ViaCluster[i].size()-1); ++nodeId){
             //     _rGraph.addOASGEdge(netId, layerId, ViaCluster[i][nodeId], ViaCluster[i][nodeId+1], false);
@@ -499,40 +454,37 @@ void GlobalMgr::connectWithVia(int netId, int layerId, OASGNode* a, OASGNode* b,
                     connectWithObstacle(netId, layerId, a, vias1A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, vias1A)){
-                    if(!checkWithVias(netId, layerId, a, vias1A, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, vias1A, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, vias1A, false);
                     }
                 }
                 target_obsId = -1;
-                target_viaNetId = viaNetId;
-                target_viaId = viaId;
+                
                 if (isSegmentIntersectingWithObstacles( a, vias1B, obstacle, target_obsId) && !edgeExist(netId, layerId, a, vias1B) ){
                     connectWithObstacle(netId, layerId, a, vias1B, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, vias1B)){
-                    if(!checkWithVias(netId, layerId, a, vias1B, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, vias1B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, vias1B, false);
                     }
                 }
                 target_obsId = -1;
-                target_viaNetId = viaNetId;
-                target_viaId = viaId;
+                
                 if (isSegmentIntersectingWithObstacles( b, vias2A, obstacle, target_obsId) && !edgeExist(netId, layerId, b, vias2A) ){
                     connectWithObstacle(netId, layerId, b, vias2A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, vias2A)){
-                    if(!checkWithVias(netId, layerId, b, vias2A, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, vias2A, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, vias2A, false);
                     }
                 }
                 target_obsId = -1;
-                target_viaNetId = viaNetId;
-                target_viaId = viaId;
+                
                 if (isSegmentIntersectingWithObstacles( b, vias2B, obstacle, target_obsId)&& !edgeExist(netId, layerId, b, vias2B)){
                     connectWithObstacle(netId, layerId, b, vias2B, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, vias2B)){
-                    if(!checkWithVias(netId, layerId, b, vias2B, viaOASGNodes, target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, vias2B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, vias2B, false);
                     }
                 }
@@ -547,40 +499,37 @@ void GlobalMgr::connectWithVia(int netId, int layerId, OASGNode* a, OASGNode* b,
                     connectWithObstacle(netId, layerId, b, vias1A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, vias1A)){
-                    if(!checkWithVias(netId, layerId, b, vias1A, viaOASGNodes,  target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, vias1A, viaOASGNodes, obstacle,  target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, vias1A, false);
                     }
                 }
                 target_obsId = -1;
-                target_viaNetId = viaNetId;
-                target_viaId = viaId;
+                
                 if (isSegmentIntersectingWithObstacles( b, vias1B, obstacle, target_obsId) && !edgeExist(netId, layerId, b, vias1B)){
                     connectWithObstacle(netId, layerId, b, vias1B, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, b, vias1B)){
-                    if(!checkWithVias(netId, layerId, b, vias1B, viaOASGNodes,  target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, b, vias1B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, b, vias1B, false);
                     }
                 }
                 target_obsId = -1;
-                target_viaNetId = viaNetId;
-                target_viaId = viaId;
+               
                 if (isSegmentIntersectingWithObstacles( a, vias2A, obstacle, target_obsId) && !edgeExist(netId, layerId, a, vias2A)){
                     connectWithObstacle(netId, layerId, a, vias2A, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, vias2A)){
-                    if(!checkWithVias(netId, layerId, a, vias2A, viaOASGNodes,  target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, vias2A, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, vias2A, false);
                     }
                 }
                 target_obsId = -1;
-                target_viaNetId = viaNetId;
-                target_viaId = viaId;
+                
                 if (isSegmentIntersectingWithObstacles( a, vias2B, obstacle, target_obsId) && !edgeExist(netId, layerId, a, vias2B)){
                     connectWithObstacle(netId, layerId, a, vias2B, obstacle, target_obsId);
                 }
                 else if(!edgeExist(netId, layerId, a, vias2B)){
-                    if(!checkWithVias(netId, layerId, a, vias2B, viaOASGNodes,  target_viaNetId, target_viaId)){
+                    if(!checkWithVias(netId, layerId, a, vias2B, viaOASGNodes, obstacle, target_viaNetId, target_viaId)){
                         _rGraph.addOASGEdge(netId, layerId, a, vias2B, false);
                     }
                 }
@@ -592,7 +541,7 @@ void GlobalMgr::connectWithVia(int netId, int layerId, OASGNode* a, OASGNode* b,
     //}
 }
 
-bool GlobalMgr::checkWithVias(int netId, int layerId, OASGNode* a, OASGNode* b, vector<vector<vector<OASGNode*>>> viaOASGNodes, size_t viaNetId, size_t viaId){
+bool GlobalMgr::checkWithVias(int netId, int layerId, OASGNode* a, OASGNode* b, vector<vector<vector<OASGNode*>>> viaOASGNodes, vector<vector<OASGNode*> > obstacle, size_t const viaNetId, size_t const viaId){
 
     size_t target_viaNetId = viaNetId;
     size_t target_viaId = viaId;
@@ -601,7 +550,7 @@ bool GlobalMgr::checkWithVias(int netId, int layerId, OASGNode* a, OASGNode* b, 
         if(netId == i) continue;
         //int numVias = viaOASGNodes[i].size();
         if(isSegmentIntersectingWithVias(a,b,viaOASGNodes[i], i, target_viaNetId, target_viaId)){
-            connectWithVia(netId, layerId, a,b,viaOASGNodes[i], target_viaNetId, target_viaId);
+            connectWithVia(netId, layerId, a,b,viaOASGNodes[i], obstacle, target_viaNetId, target_viaId);
             return true;
         }
     }    
@@ -636,19 +585,6 @@ bool GlobalMgr::edgeExist(int netId, int layerId, OASGNode* a, OASGNode* b){
 
 }
 
-// void GlobalMgr::resetAlreadyDeal(){
-//     //reset alreadydealwith obs & vias
-//     for(int i = 0; i < alreadyDealWithAObs.size();i++){
-//         alreadyDealWithAObs[i] = false;
-//     }
-//     for(int i = 0; i < alreadyDealWithAVias.size();i++){
-//         for(int j = 0; j < alreadyDealWithAVias[i].size();j++){
-//             alreadyDealWithAVias[i][j] = false;
-//         }
-//     }
-// }
-
-
 //Bug 1: Now obstacle are creating OASG nodes with fixed number(4 for rectangle)
 //Therefore, there will be bug when encountering polygon with number of vertices greater than 4.
 //Bug 2: Now there's only one obstacle, when we have more than 1, we will create redundant obstacle loop for other obstacles that is not connected.
@@ -673,9 +609,9 @@ void GlobalMgr::buildOASG(bool case5) {
         viaOASGNodes.resize(_rGraph.numNets());
         for (size_t netId = 0; netId < _rGraph.numNets(); ++ netId) {
             vector<bool> addViasRoundEdges_temp;
-            // //vector<bool> alreadyDealWithAVias_temp;
             int viaNodeId = 0;
             vector<vector<OASGNode*>> tempViaOASGNodes;
+            /////////////////////////////////////only four points////////////////////////////////////////////
             // tempViaOASGNodes.resize((1+_db.vNet(netId)->numTPorts()), vector<OASGNode*>(4, nullptr));
             // Step1: Create Source Via        
             // double minX = _db.vNet(netId)->sourcePort()->boundPolygon()->minX();
@@ -686,6 +622,9 @@ void GlobalMgr::buildOASG(bool case5) {
             // tempViaOASGNodes[viaNodeId][1] = _rGraph.addOASGNode(netId, maxX, minY, OASGNodeType::MIDDLE);
             // tempViaOASGNodes[viaNodeId][2] = _rGraph.addOASGNode(netId, maxX, maxY, OASGNodeType::MIDDLE);
             // tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
+            //////////////////////////////////////only four points///////////////////////////////////////////
+
+            ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
             vector<OASGNode*> temp_Snodes;
             for(int vtxId = 0; vtxId < _db.vNet(netId)->sourcePort()->boundPolygon()->numVtcs(); vtxId++){
                 double X = _db.vNet(netId)->sourcePort()->boundPolygon()->vtxX(vtxId);
@@ -694,11 +633,14 @@ void GlobalMgr::buildOASG(bool case5) {
                 temp_Snodes.push_back(n);
             }
             tempViaOASGNodes.push_back(temp_Snodes);
+            ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
+
             ++viaNodeId ;
             addViasRoundEdges_temp.push_back(false);
-            // //alreadyDealWithAVias_temp.push_back(false);
+            
             //Secondly, check with the target Viaclusters
             for(size_t tPortId = 0; tPortId < _db.vNet(netId)->numTPorts(); ++ tPortId) {
+                //////////////////////////////////////only four points//////////////////////////////////////////////
                 // double minX = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->minX();
                 // double minY = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->minY();
                 // double maxX = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->maxX();
@@ -707,6 +649,9 @@ void GlobalMgr::buildOASG(bool case5) {
                 // tempViaOASGNodes[viaNodeId][1] = _rGraph.addOASGNode(netId, maxX, minY, OASGNodeType::MIDDLE);
                 // tempViaOASGNodes[viaNodeId][2] = _rGraph.addOASGNode(netId, maxX, maxY, OASGNodeType::MIDDLE);
                 // tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
+                //////////////////////////////////////only four points//////////////////////////////////////////////
+
+                ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
                 vector<OASGNode*> temp_Tnodes;
                 for(int vtxId = 0; vtxId < _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->numVtcs(); vtxId++){
                     double X = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->vtxX(vtxId);
@@ -715,12 +660,12 @@ void GlobalMgr::buildOASG(bool case5) {
                     temp_Tnodes.push_back(n);
                 }
                 tempViaOASGNodes.push_back(temp_Tnodes);
+                ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
                 ++viaNodeId;
                 addViasRoundEdges_temp.push_back(false);
             }
             viaOASGNodes[netId] = tempViaOASGNodes;
             addViasRoundEdges.push_back(addViasRoundEdges_temp);
-            // //alreadyDealWithAVias.push_back(alreadyDealWithAVias_temp);
         }
     }
 
@@ -757,7 +702,6 @@ void GlobalMgr::buildOASG(bool case5) {
                 }
             }
             
-
             //這裡要判斷OASG Edges有沒有重複加入
             //要確認這裡有沒有resize成功
             alreadyAddedEdges.clear();
@@ -767,7 +711,6 @@ void GlobalMgr::buildOASG(bool case5) {
             }
             int size_alreadyAddEdges = 1 + _db.vNet(netId)->numTPorts() + numOfObsNodes;
             alreadyAddedEdges.resize(size_alreadyAddEdges * (size_alreadyAddEdges-1));
-
 
             bool thisLayerHaveObs = false;
             bool thisNetTouchObsThisLayer = false;
@@ -791,19 +734,6 @@ void GlobalMgr::buildOASG(bool case5) {
                 }
             }
 
-            //平:這邊為了方便直接把obsNodes存到GlobalMgr.h裡面的vector<vector<OASGNode*>> obstacle ，要優化的話可以改掉obsNodes，但有些function要改IO
-            obstacle.clear();
-            // //alreadyDealWithAObs.clear();
-
-            for(int i = 0; i < obsNodes.size();++i){
-                vector<OASGNode*> temp;
-                for(int j = 0; j < obsNodes[i].size(); ++j){
-                    temp.push_back(obsNodes[i][j]);
-                }
-                obstacle.push_back(temp);
-                // //alreadyDealWithAObs.push_back(false);
-            }
-
             // int numScanNode = 1 + _db.vNet(netId)->numTPorts() + (4 * _db.numObstacles(layerId));
             int numScanNode = 1 + _db.vNet(netId)->numTPorts(); 
             vector<OASGNode*> traverseNodes;
@@ -812,7 +742,10 @@ void GlobalMgr::buildOASG(bool case5) {
                 traverseNodes.push_back(_rGraph.targetOASGNode(netId,netTPortId,layerId));
             }
 
-            
+            //reset some variables
+            size_t init_obsId = -1;
+            size_t init_viaNetId = -1;
+            size_t init_viaId = -1;        
 
             //OASG Source
             for (size_t currentScanNodeId = 0; currentScanNodeId < numScanNode; ++ currentScanNodeId){
@@ -822,11 +755,7 @@ void GlobalMgr::buildOASG(bool case5) {
                     double scanY = _rGraph.sourceOASGNode(netId,layerId)->y();
 
                     // for (int i = 1;i < numScanNode; ++i){
-                        int i = 1;
-                        //resetAlreadyDeal();
-                        size_t init_obsId = -1;
-                        size_t init_viaNetId = -1;
-                        size_t init_viaId = -1;
+                        int i = 1;    
 
                         double curX = traverseNodes[i]-> x();
                         double curY = traverseNodes[i]-> y();
@@ -837,7 +766,7 @@ void GlobalMgr::buildOASG(bool case5) {
                             thisNetTouchObsThisLayer = true;
                         }
                         else {
-                            if(!checkWithVias(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), traverseNodes[i],viaOASGNodes, init_viaNetId, init_viaId)){
+                            if(!checkWithVias(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), traverseNodes[i],viaOASGNodes,obsNodes, init_viaNetId, init_viaId)){
                                 if(!edgeExist(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), traverseNodes[i])){
                                     _rGraph.addOASGEdge(netId, layerId, _rGraph.sourceOASGNode(netId,layerId), traverseNodes[i], false);
                                 }   
@@ -854,13 +783,11 @@ void GlobalMgr::buildOASG(bool case5) {
                     double scanX = traverseNodes[currentScanNodeId]->x();
                     double scanY = traverseNodes[currentScanNodeId]->y();
 
-                    for (int i = 1;i < numScanNode-1; i++ ){
+                    for (int i = 1; i < numScanNode-1; i++ ){
                         if(i <= currentScanNodeId) continue;
 
-                        //resetAlreadyDeal();
-                        size_t init_obsId = -1;
-                        size_t init_viaNetId = -1;
-                        size_t init_viaId = -1;
+                        init_obsId = -1;
+        
                         double curX = traverseNodes[i]-> x();
                         double curY = traverseNodes[i]-> y();
                         if(curX >= scanX && curY >= scanY){
@@ -870,7 +797,7 @@ void GlobalMgr::buildOASG(bool case5) {
                                 thisNetTouchObsThisLayer = true;
                             }
                             else {
-                                if(!checkWithVias(netId, layerId, traverseNodes[i], traverseNodes[i+1],viaOASGNodes, init_viaNetId, init_viaId)){
+                                if(!checkWithVias(netId, layerId, traverseNodes[i], traverseNodes[i+1],viaOASGNodes, obsNodes, init_viaNetId, init_viaId)){
                                     if(!edgeExist(netId, layerId, traverseNodes[i], traverseNodes[i+1])){
                                         _rGraph.addOASGEdge(netId, layerId, traverseNodes[i], traverseNodes[i+1], false);
                                     }
@@ -878,10 +805,8 @@ void GlobalMgr::buildOASG(bool case5) {
                             }
                         }
                         if(i == 1){
-                            //resetAlreadyDeal();
-                            size_t init_obsId = -1;
-                            size_t init_viaNetId = -1;
-                            size_t init_viaId = -1;
+                            init_obsId = -1;
+                            
                             curX = traverseNodes[numScanNode-1]-> x();
                             curY = traverseNodes[numScanNode-1]-> y();
                             if(curX >= scanX && curY >= scanY){
@@ -891,7 +816,7 @@ void GlobalMgr::buildOASG(bool case5) {
                                     thisNetTouchObsThisLayer = true;
                                 }
                                 else {
-                                    if(!checkWithVias(netId, layerId, traverseNodes[1], traverseNodes[numScanNode-1],viaOASGNodes, init_viaNetId, init_viaId)){
+                                    if(!checkWithVias(netId, layerId, traverseNodes[1], traverseNodes[numScanNode-1],viaOASGNodes, obsNodes, init_viaNetId, init_viaId)){
                                         if(!edgeExist(netId, layerId, traverseNodes[1], traverseNodes[numScanNode-1])){
                                             _rGraph.addOASGEdge(netId, layerId, traverseNodes[1], traverseNodes[numScanNode-1], false);
                                         }
@@ -902,10 +827,9 @@ void GlobalMgr::buildOASG(bool case5) {
                     }
                     for (int i = 1;i < numScanNode-1; i++ ){
                         if(i == currentScanNodeId) continue;
-                        //resetAlreadyDeal();
-                        size_t init_obsId = -1;
-                        size_t init_viaNetId = -1;
-                        size_t init_viaId = -1;
+                        
+                        init_obsId = -1;
+                        
                         double curX = traverseNodes[i]-> x();
                         double curY = traverseNodes[i]-> y();
                         //後面是要判斷他們不是同一個點
@@ -916,7 +840,7 @@ void GlobalMgr::buildOASG(bool case5) {
                                 thisNetTouchObsThisLayer = true;
                             }
                             else {
-                                if(!checkWithVias(netId, layerId,  traverseNodes[i], traverseNodes[i+1],viaOASGNodes, init_viaNetId, init_viaId)){
+                                if(!checkWithVias(netId, layerId,  traverseNodes[i], traverseNodes[i+1],viaOASGNodes, obsNodes, init_viaNetId, init_viaId)){
                                     if(!edgeExist(netId, layerId,  traverseNodes[i], traverseNodes[i+1])){
                                         _rGraph.addOASGEdge(netId, layerId,  traverseNodes[i], traverseNodes[i+1], false);
                                     }
@@ -924,10 +848,9 @@ void GlobalMgr::buildOASG(bool case5) {
                             }
                         }
                         if(i == 1){
-                            //resetAlreadyDeal();
-                            size_t init_obsId = -1;
-                            size_t init_viaNetId = -1;
-                            size_t init_viaId = -1;
+                            
+                            init_obsId = -1;
+                            
                             curX = traverseNodes[numScanNode-1]-> x();
                             curY = traverseNodes[numScanNode-1]-> y();
                             if(curX >= scanX && curY >= scanY){
@@ -937,7 +860,7 @@ void GlobalMgr::buildOASG(bool case5) {
                                     thisNetTouchObsThisLayer = true;
                                 }
                                 else {
-                                    if(!checkWithVias(netId, layerId,  traverseNodes[1], traverseNodes[numScanNode-1],viaOASGNodes, init_viaNetId, init_viaId)){
+                                    if(!checkWithVias(netId, layerId,  traverseNodes[1], traverseNodes[numScanNode-1],viaOASGNodes, obsNodes, init_viaNetId, init_viaId)){
                                         if(!edgeExist(netId, layerId, traverseNodes[1], traverseNodes[numScanNode-1])){
                                             _rGraph.addOASGEdge(netId, layerId, traverseNodes[1], traverseNodes[numScanNode-1], false);
                                         }
@@ -947,7 +870,6 @@ void GlobalMgr::buildOASG(bool case5) {
                         }
                     }
                 }
-                
             }
             //obstacle round edge
             //這裡不用判斷Edge有沒有重複，因為是第一次加入
