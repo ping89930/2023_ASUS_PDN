@@ -624,7 +624,7 @@ void GlobalMgr::buildOASG(bool case5) {
             // tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
             //////////////////////////////////////only four points///////////////////////////////////////////
 
-            ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
+            ///////////////////////////////all bounding polygon nodes/////////////////////////////////////
             vector<OASGNode*> temp_Snodes;
             for(int vtxId = 0; vtxId < _db.vNet(netId)->sourcePort()->boundPolygon()->numVtcs(); vtxId++){
                 double X = _db.vNet(netId)->sourcePort()->boundPolygon()->vtxX(vtxId);
@@ -633,7 +633,7 @@ void GlobalMgr::buildOASG(bool case5) {
                 temp_Snodes.push_back(n);
             }
             tempViaOASGNodes.push_back(temp_Snodes);
-            ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
+            ///////////////////////////////all bounding polygon nodes/////////////////////////////////////
 
             ++viaNodeId ;
             addViasRoundEdges_temp.push_back(false);
@@ -651,7 +651,7 @@ void GlobalMgr::buildOASG(bool case5) {
                 // tempViaOASGNodes[viaNodeId][3] = _rGraph.addOASGNode(netId, minX, maxY, OASGNodeType::MIDDLE);
                 //////////////////////////////////////only four points//////////////////////////////////////////////
 
-                ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
+                ///////////////////////////////all bounding polygon nodes/////////////////////////////////////
                 vector<OASGNode*> temp_Tnodes;
                 for(int vtxId = 0; vtxId < _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->numVtcs(); vtxId++){
                     double X = _db.vNet(netId)->targetPort(tPortId)->boundPolygon()->vtxX(vtxId);
@@ -660,7 +660,7 @@ void GlobalMgr::buildOASG(bool case5) {
                     temp_Tnodes.push_back(n);
                 }
                 tempViaOASGNodes.push_back(temp_Tnodes);
-                ///////////////////////////////every bounding polygon nodes/////////////////////////////////////
+                ///////////////////////////////all bounding polygon nodes/////////////////////////////////////
                 ++viaNodeId;
                 addViasRoundEdges_temp.push_back(false);
             }
