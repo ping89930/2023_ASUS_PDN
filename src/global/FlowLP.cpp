@@ -140,6 +140,7 @@ void FlowLP::setObjective(double areaWeight, double viaWeight, double diffWeight
     }
     // cerr << "_model.setObjective(obj, GRB_MINIMIZE)" << endl;
     _model.setObjective(obj, GRB_MINIMIZE);
+    // _model.addConstr(obj >= 0);
     // _model.update();
     // _model.write("/home/leotseng/2023_ASUS_PDN/exp/output/FlowLP_debug.lp");
 }

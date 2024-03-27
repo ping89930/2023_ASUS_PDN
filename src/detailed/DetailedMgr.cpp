@@ -600,7 +600,7 @@ void DetailedMgr::negoAStar(bool sameNetCong) {
                                 vVtx.push_back(make_pair((xId+1)*_gridWidth, (yId+1)*_gridWidth));
                                 vVtx.push_back(make_pair(xId*_gridWidth, (yId+1)*_gridWidth));
                                 Polygon* p = new Polygon(vVtx, _plot);
-                                p->plot(SVGPlotColor::black, layId);
+                                // p->plot(SVGPlotColor::black, layId);
                             }
                         }
                         for (size_t pGridId = 0; pGridId < router.numPGrids(); ++ pGridId) {

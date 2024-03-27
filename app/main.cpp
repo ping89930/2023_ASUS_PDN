@@ -125,10 +125,17 @@ int main(int argc, char* argv[]){
     // double offsetY = 10;
 
     // // For Example 5
-    double boardWidth = 90*gridWidth;
+    // double boardWidth = 90*gridWidth;
+    // double boardHeight = 55*gridWidth;
+    // size_t numLayers = 5;
+    // double offsetX = 110;
+    // double offsetY = 10;
+
+    // // For Example 5 (smaller)
+    double boardWidth = 50*gridWidth;
     double boardHeight = 55*gridWidth;
     size_t numLayers = 5;
-    double offsetX = 110;
+    double offsetX = 130;
     double offsetY = 10;
 
 
@@ -184,9 +191,9 @@ int main(int argc, char* argv[]){
     globalMgr.layerDistribution();
     // // //globalMgr.plotRGraph();
     globalMgr.buildTestNCOASG();
-    // globalMgr.plotNCOASG();
+    globalMgr.plotNCOASG();
     // // globalMgr.voltageAssignment();
-    // /*
+    /*
     globalMgr.genCapConstrs();
     globalMgr.setUBViaArea(detailedMgr->vNetPortGrid());
     try {
@@ -213,8 +220,8 @@ int main(int argc, char* argv[]){
         cerr << "Error = " << e.getErrorCode() << endl;
         cerr << e.getMessage() << endl;
     }
-    globalMgr.plotCurrentPaths();
-    // */
+    // globalMgr.plotCurrentPaths();
+    */
     /*
     // DetailedMgr detailedMgr(db, plot, 2 * db.VIA16D8A24()->drillRadius());
     delete detailedMgr;
@@ -265,6 +272,7 @@ int main(int argc, char* argv[]){
 
     outputWriter.writeTuningResult(ftunRes, numIIter, numVIter, numIVIter, globalMgr._vArea, globalMgr._vOverlap, globalMgr._vSameNetOverlap, globalMgr._vViaArea, globalMgr._vAfterCost);
     detailedMgr->buildMtx();
+    detailedMgr->printResult();
 
     cout << "Time : " << hour << " hours " << min <<" mins "<< fixed << setprecision(5) << time_used << " sec " << endl; 
 */
