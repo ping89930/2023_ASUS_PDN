@@ -59,19 +59,12 @@
     "cmake.debugConfig": {
         "args": [
             "${workspaceFolder}/exp/input/ST_Components_1.txt",
-            "${workspaceFolder}/exp/input/parameters.txt",
+            "${workspaceFolder}/exp/input/parameters_3.txt",
             "${workspaceFolder}/exp/input/Example_Project_1.txt",
-            "${workspaceFolder}/exp/input/obstacle.txt",
-            "${workspaceFolder}/exp/output/output.html",
+            //"${workspaceFolder}/exp/input/Project4_MTL_U_NoCross_Modified.txt",
+            "${workspaceFolder}/exp/input/obstacle_case1.txt",
+            "${workspaceFolder}/exp/output/output_case1_thread.html",
             "${workspaceFolder}/exp/output/tuningRes.txt"
-            // "${workspaceFolder}/input/iccad2022-problem-b/case4.txt",
-            // "${workspaceFolder}/output/iccad2022-problem-b/case4.txt",
-            // "--ntuplace3",
-            // "${workspaceFolder}/ntuplace3/ntuplace-r",
-            // "--params",
-            // "${workspaceFolder}/params/iccad2022-problem-b/case2.json",
-            // "--imgdir",
-            // "${workspaceFolder}/images"
         ]
         
     },

@@ -85,21 +85,42 @@ int main(int argc, char* argv[]){
     // } else {
     //     cerr << "Error opening output file" << endl;
     // }
-
-    // double gridWidth = 4;
-    // double boardWidth = 15*gridWidth;
-    // double boardHeight = 19*gridWidth;
-    // size_t numLayers = 4;
-    // double gridWidth = 8;
-    // double boardWidth = 50*gridWidth;
-    // double boardHeight = 15*gridWidth;
-    // size_t numLayers = 12;
     double gridWidth = 1;
+
+    // For Example 1
     double boardWidth = 75*gridWidth;
     double boardHeight = 40*gridWidth;
     size_t numLayers = 4;
     double offsetX = 40;
     double offsetY = 40;
+
+    // For Example 2 
+    // double boardWidth = 100*gridWidth;
+    // double boardHeight = 70*gridWidth;
+    // size_t numLayers = 4;
+    // double offsetX = 95;
+    // double offsetY = 45;
+
+    // // For Example 3 
+    // double boardWidth = 100*gridWidth;
+    // double boardHeight = 65*gridWidth;
+    // size_t numLayers = 4;
+    // double offsetX = 25;
+    // double offsetY = 20;
+
+    // // For Example 4 
+    // double boardWidth = 80*gridWidth;
+    // double boardHeight = 55*gridWidth;
+    // size_t numLayers = 4;
+    // double offsetX = 120;
+    // double offsetY = 10;
+
+    // // For Example 5
+    // double boardWidth = 90*gridWidth;
+    // double boardHeight = 55*gridWidth;
+    // size_t numLayers = 5;
+    // double offsetX = 110;
+    // double offsetY = 10;
 
     // SVGPlot plot(fout, boardWidth, boardHeight, gridWidth, numLayers, 6.0);
     SVGPlot plot(fout, boardWidth, boardHeight, gridWidth, numLayers, 10.0);
@@ -184,8 +205,10 @@ int main(int argc, char* argv[]){
     // printf("\n==================== buildMtx ===================\n");
     //detailedMgr->buildMtx();
     //detailedMgr->SmartDistribute();
+    
     detailedMgr->PostProcessing();
     detailedMgr->RemoveIsolatedGrid();
+    //detailedMgr->plotGridMap();
 
     time(&end);
     double time_used = double(end - start);
@@ -210,7 +233,7 @@ int main(int argc, char* argv[]){
 
     outputWriter.writeTuningResult(ftunRes, numIIter, numVIter, numIVIter, globalMgr._vArea, globalMgr._vOverlap, globalMgr._vSameNetOverlap, globalMgr._vViaArea);
 
-    detailedMgr->buildMtx();
+    //detailedMgr->buildMtx();
 
     cout << "Time : " << hour << " hours " << min <<" mins "<< fixed << setprecision(5) << time_used << " sec " << endl; 
 

@@ -9,3 +9,6 @@ target_link_libraries(detailed PRIVATE base)
 # Add Eigen
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 target_link_libraries(detailed PUBLIC Eigen3::Eigen)
+
+#add thread
+target_link_libraries(detailed PUBLIC pthread)
