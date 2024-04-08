@@ -58,6 +58,10 @@ class DetailedMgr {
                 vector<double> temp(_db.vNet(netId)->numTPorts(), 0.0);
                 _vTPortVolt.push_back(temp);
             }
+            // _NeedSecondRemove
+            for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
+               _NeedSecondRemove.push_back(false);
+            }
         }
         ~DetailedMgr() {}
 
@@ -106,6 +110,7 @@ class DetailedMgr {
             }
         }
         void buildMtx();
+        void buildMtx_thread();
         void buildSingleNetMtx(size_t netId);
         double getResistance(Grid*, Grid*);
         void check();
@@ -115,7 +120,10 @@ class DetailedMgr {
         bool NetEdgeDetect(size_t netId, size_t layId, Grid* grid);
         void SmartDistribute();
         void PostProcessing();
+        void SmartRemove_singleNet(size_t netId);
+        //void SmartGrow_singleNet(size_t netId);
         void RemoveIsolatedGrid();
+        void RemoveIsolatedGrid_singleNet(size_t netId);
         void writeColorMap_v2(const char*, bool);
 
     private:
@@ -140,6 +148,9 @@ class DetailedMgr {
         int _obsCongest;         // the congestion of obstacles and regions outside boundaries
         double _distWeight;      // the weight of distance in A* cost
         double _cLineDistWeight; // the weight of distance to the center line in A* cost
+
+        //second remove
+        vector<bool> _NeedSecondRemove; //index = [netId]
 };
 
 #endif

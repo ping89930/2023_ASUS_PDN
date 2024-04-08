@@ -248,6 +248,18 @@ int main(int argc, char* argv[]){
     //detailedMgr->SmartDistribute();
     detailedMgr->PostProcessing();
     detailedMgr->RemoveIsolatedGrid();
+    // time_t no_thread_start,no_thread_end;
+    // time_t thread_start,thread_end;
+    // time(&no_thread_start);
+    // detailedMgr->buildMtx();
+    // time(&no_thread_end);
+
+    // time(&thread_start);
+    // detailedMgr->buildMtx_thread();
+    // time(&thread_end);
+
+    // cout << "no thread buildMtx used : " << no_thread_end - no_thread_start << endl;
+    // cout << "thread buildMtx used : " << thread_end - thread_start << endl;
 
     time(&end);
     double time_used = double(end - start);
@@ -260,18 +272,21 @@ int main(int argc, char* argv[]){
         hour = min/60;
         min = min%60;
     }
-
+    
     detailedMgr->plotGridMap();
+    
     //detailedMgr->plotGridMapVoltage();
     //detailedMgr->plotGridMapCurrent();
 
     detailedMgr->writeColorMap_v2("../../exp/output/voltageColorMap.txt", 1);
     detailedMgr->writeColorMap_v2("../../exp/output/currentColorMap.txt", 0);
     //globalMgr.plotDB();
+    
     OutputWriter outputWriter;
 
     outputWriter.writeTuningResult(ftunRes, numIIter, numVIter, numIVIter, globalMgr._vArea, globalMgr._vOverlap, globalMgr._vSameNetOverlap, globalMgr._vViaArea, globalMgr._vAfterCost);
     //detailedMgr->buildMtx();
+   
     detailedMgr->printResult();
 
     cout << "Time : " << hour << " hours " << min <<" mins "<< fixed << setprecision(5) << time_used << " sec " << endl; 
