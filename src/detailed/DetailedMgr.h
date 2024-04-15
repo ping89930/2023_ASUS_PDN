@@ -110,6 +110,7 @@ class DetailedMgr {
             }
         }
         void buildMtx();
+        void buildMtx_thread();
         void buildSingleNetMtx(size_t netId);
         double getResistance(Grid*, Grid*);
         void check();
@@ -117,11 +118,11 @@ class DetailedMgr {
         void SmartRefine(size_t netId, int k);
         bool SmartRemove(size_t netId, int k);
         bool NetEdgeDetect(size_t netId, size_t layId, Grid* grid);
-        void SmartDistribute();
-        void PostProcessing();
-        void SmartRemove_singleNet(size_t netId);
+        void SmartDistribute(bool threading);
+        void PostProcessing(bool threading);
+        void SmartRemove_singleNet(size_t netId,int k);
         //void SmartGrow_singleNet(size_t netId);
-        void RemoveIsolatedGrid();
+        void RemoveIsolatedGrid(bool threading);
         void RemoveIsolatedGrid_singleNet(size_t netId);
         void writeColorMap_v2(const char*, bool);
 

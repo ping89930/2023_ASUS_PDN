@@ -704,6 +704,7 @@ void DetailedMgr::addPortVia() {
             Port* tPort = _db.vNet(netId)->targetPort(tPortId);
             if (tPort->viaArea() > 0) {
                 int numTVias = floor(tPort->viaArea() / _db.VIA16D8A24()->metalArea());
+    
                 assert(numTVias >= 1);
                 cerr << "net" << netId << " tPort" << tPortId << ": numVias = " << numTVias << "; numGrids = " << _vNetPortGrid[netId][tPortId+1].size() << endl;
                 vector< pair<double, double> > centPosT = kMeansClustering(_vNetPortGrid[netId][tPortId+1], numTVias, 100);
@@ -1676,7 +1677,6 @@ void DetailedMgr::SmartGrow(size_t netId, int k){
     
     //cout << "size of adding neighbor : " << _vNetGrid[netId][layId].size()<<endl;
 
-
      //only keep k nodes and remove other nodes
     int removeNum = Candidate.size() - k;
     int alreadyRemove = 0;
@@ -1701,7 +1701,7 @@ void DetailedMgr::SmartGrow(size_t netId, int k){
         //sort 
         std::sort(NodeCurrent.begin(), NodeCurrent.end(), compareByCurrent);
         
-        Grid* r = new Grid(0,0,0);//new a pointer for later remove operation
+        Grid* r = new Grid(-1,-1,netId);//new a pointer for later remove operation
         for(int i = 0; alreadyRemove < removeNum && i < NodeCurrent.size() ; i++){
             int layId =  get<1>(NodeCurrent[i]);
             int gridId = get<2>(NodeCurrent[i]);
@@ -1770,7 +1770,7 @@ void DetailedMgr::SmartRefine(size_t netId, int k){
     std::sort(NodeCurrent.begin(), NodeCurrent.end(), compareByCurrent);
 
     //remove k nodes
-    Grid* r = new Grid(0,0,0);//new a pointer for later remove operation
+    Grid* r = new Grid(-1,-1,netId);//new a pointer for later remove operation
     int alreadyRemoved = 0;
     for(int i = 0; i < NodeCurrent.size() && alreadyRemoved < k ; i++){
         int layId = get<1>(NodeCurrent[i]);
@@ -1812,11 +1812,11 @@ bool DetailedMgr::SmartRemove(size_t netId, int k){
     }
     //sort 
     std::sort(NodeCurrent.begin(), NodeCurrent.end(), compareByCurrent);
-
+     
     int alreadyRemove = 0; 
     vector<pair<size_t,Grid*>> RemovedGrid; //layId and grid*
     //remove k nodes
-    Grid* r = new Grid(-1,-1,0);//new a pointer for later remove operation
+    Grid* r = new Grid(-1,-1,netId);//new a pointer for later remove operation
     for(int i = 0; i < NodeCurrent.size() && alreadyRemove < k ; i++){
         int layId = get<1>(NodeCurrent[i]);
         int gridId = get<2>(NodeCurrent[i]);
@@ -1833,7 +1833,7 @@ bool DetailedMgr::SmartRemove(size_t netId, int k){
             alreadyRemove ++;
         }
     }
-
+    
     //delete removed grid
     for(size_t layId = 0; layId < _vNetGrid[netId].size();layId ++){
         _vNetGrid[netId][layId].erase(std::remove(_vNetGrid[netId][layId].begin(),_vNetGrid[netId][layId].end(), r), _vNetGrid[netId][layId].end());
@@ -1875,12 +1875,25 @@ bool DetailedMgr::SmartRemove(size_t netId, int k){
 
     return true;
 }
-
-void DetailedMgr::SmartDistribute(){
+void DetailedMgr::buildMtx_thread(){
+    vector<std::thread> threads;
+    for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
+        threads.push_back(std::thread([this, netId](){ buildSingleNetMtx(netId); }));
+    }
+    for (std::thread& t : threads) {
+        t.join();
+    }
+}
+void DetailedMgr::SmartDistribute(bool threading){
 
     cout << "###########Overlap Distribution###########" << endl;
     //do PEEC for all nets
-    buildMtx();
+    if(threading){
+        buildMtx_thread();
+    }
+    else{
+        buildMtx();
+    }
 
     vector<vector<double>> Max_netCurrent;//[netId][layer]= max_current of layer
 
@@ -1900,7 +1913,7 @@ void DetailedMgr::SmartDistribute(){
     }
     
     for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
-        Grid* r = new Grid(0,0,0);//new a pointer for later remove operation
+        Grid* r = new Grid(-1,-1,netId);//new a pointer for later remove operation
         for(size_t layId = 0; layId < _vNetGrid[netId].size();layId ++){
             for(size_t gridId = 0; gridId < _vNetGrid[netId][layId].size() ; gridId++){
                 Grid* grid = _vNetGrid[netId][layId][gridId];
@@ -1934,11 +1947,20 @@ void DetailedMgr::SmartDistribute(){
         }
         delete r;
     }
-    buildMtx();//DO PEEC after distribution
 }
 
-void DetailedMgr::SmartRemove_singleNet(size_t netId){
+void DetailedMgr::SmartRemove_singleNet(size_t netId,int k){
     bool ReachTarget = true;
+    for(size_t tPortId = 0; tPortId < _vTPortCurr[netId].size();tPortId++){
+        if(_vTPortCurr[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->current()){
+            ReachTarget = false;
+            break;
+        }
+        if(_vTPortVolt[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->voltage()){
+            ReachTarget = false;
+            break;
+        }
+    }
     int rm = 0;
 
     for(size_t layId = 0; layId < _vNetGrid[netId].size(); layId ++){
@@ -1953,7 +1975,7 @@ void DetailedMgr::SmartRemove_singleNet(size_t netId){
         ReachTarget = SmartRemove(netId,rm);
         rm = (int)(rm/1.2);//隨便設一個遞減函數
         count ++;
-        if(count > 12){
+        if(count > k){
             cout << "######OUT of TIME########" << endl; 
             break;
         }
@@ -1966,24 +1988,24 @@ void DetailedMgr::SmartRemove_singleNet(size_t netId){
 
 // }
 
-void DetailedMgr::PostProcessing(){
+void DetailedMgr::PostProcessing(bool threading){
 
     //remove overlap first
-    SmartDistribute();
+    SmartDistribute(threading);
 
     //first stage smartRemove
-    vector<std::thread> threads_remove_1st;
-    for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
-        threads_remove_1st.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId); }));
-    }
-    for (std::thread& t : threads_remove_1st) {
-        t.join();
-    }
-
-    cout << "SMART GROW START" << endl;
-    //smartgrow stage
-    //for loop for each net
-    for(size_t netId = 0; netId < _vNetGrid.size(); ++netId){
+    if(threading){
+        vector<std::thread> threads_remove_1st;
+        for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
+            threads_remove_1st.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId,12); }));
+        }
+        for (std::thread& t : threads_remove_1st) {
+            t.join();
+        }
+        cout << "SMART GROW START" << endl;
+        //smartgrow stage
+        //for loop for each net
+        for(size_t netId = 0; netId < _vNetGrid.size(); ++netId){
 
             //SmartGrow stage
             bool ReachTarget = true;
@@ -2029,31 +2051,130 @@ void DetailedMgr::PostProcessing(){
                 //     break;
                 // }
             }
+            cout <<"NET " << netId << " DO " << count << " times SmartGrow to reach the target" << endl;   
+        }
+        //SmartRemove 2nd stage
+        cout << "second remove stage start" << endl;
+        //first stage smartRemove
+        vector<std::thread> threads_remove_2nd;
+        for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
+            if(_NeedSecondRemove[netId]){
+                threads_remove_2nd.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId,3); }));
+            }
+        }
+        for (std::thread& t : threads_remove_2nd) {
+            t.join();
+        }
+        cout << "finish all post processing" << endl;
+    }
+    else{
+        //for loop for each net
+        for(size_t netId = 0; netId < _vNetGrid.size(); ++netId){
+            // Remove stage
+            bool ReachTarget = true;
+            for(size_t tPortId = 0; tPortId < _vTPortCurr[netId].size();tPortId++){
+                if(_vTPortCurr[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->current()){
+                    ReachTarget = false;
+                    break;
+                }
+                if(_vTPortVolt[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->voltage()){
+                    ReachTarget = false;
+                    break;
+                }
+            }
+            int rm = 0;
+
+            for(size_t layId = 0; layId < _vNetGrid[netId].size(); layId ++){
+                rm += _vNetGrid[netId][layId].size();
+            }
+
+            rm = rm/30;
+           
+            int count = 0;
+
+            while(ReachTarget){
+                ReachTarget = SmartRemove(netId,rm);
+                rm = (int)(rm/1.2);//隨便設一個遞減函數
+                count ++;
+                if(count > 12){
+                    cout << "######OUT of TIME########" << endl; 
+                    break;
+                }
+            }
+
+            if(count <= 12) cout <<"NET " << netId << " DO " << count << " times SmartRemove to reach the target" << endl;
+
+            //SmartGrow stage
+            //ReachTarget = true;
+            int s = 0;
+
+            for(size_t layId = 0; layId < _vNetGrid[netId].size(); layId ++){
+                s += _vNetGrid[netId][layId].size();
+            }
+            s /= 10;   
+
+            for(size_t tPortId = 0; tPortId < _vTPortCurr[netId].size();tPortId++){
+                if(_vTPortCurr[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->current()){
+                    ReachTarget = false;
+                    break;
+                }
+                if(_vTPortVolt[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->voltage()){
+                    ReachTarget = false;
+                    break;
+                }
+            }
+
+            count = 0;
+
+            while(!ReachTarget){
+                _NeedSecondRemove[netId] = true;
+                ReachTarget = true;
+                SmartGrow(netId,s);
+                //s = (int)(s/1.25);//隨便設一個遞減函數
+
+                for(size_t tPortId = 0; tPortId < _vTPortCurr[netId].size();tPortId++){
+                    if(_vTPortCurr[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->current()){
+                        ReachTarget = false;
+                        break;
+                    }
+                    if(_vTPortVolt[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->voltage()){
+                        ReachTarget = false;
+                        break;
+                    }
+                }  
+                count ++;
+                // if(count > 5){
+                //     cout << "######OUT of TIME########" << endl; 
+                //     break;
+                // }
+            }
 
             cout <<"NET " << netId << " DO " << count << " times SmartGrow to reach the target" << endl;
 
-            // ReachTarget = true;
-            // int rm = 0;
+            //2nd remove
+            if(_NeedSecondRemove[netId]){
+                int rm = 0;
 
-            // for(size_t layId = 0; layId < _vNetGrid[netId].size(); layId ++){
-            //     rm += _vNetGrid[netId][layId].size();
-            // }
+                for(size_t layId = 0; layId < _vNetGrid[netId].size(); layId ++){
+                    rm += _vNetGrid[netId][layId].size();
+                }
 
-            // rm = rm/30;
-           
-            // count = 0;
+                rm = rm/30;
+            
+                count = 0;
 
-            // while(ReachTarget){
-            //     ReachTarget = SmartRemove(netId,rm);
-            //     rm = (int)(rm/1.2);//隨便設一個遞減函數
-            //     count ++;
-            //     if(count > 12){
-            //         cout << "######OUT of TIME########" << endl; 
-            //         break;
-            //     }
-            // }
+                while(ReachTarget){
+                    ReachTarget = SmartRemove(netId,rm);
+                    rm = (int)(rm/1.2);//隨便設一個遞減函數
+                    count ++;
+                    if(count > 3){
+                        cout << "######OUT of TIME########" << endl; 
+                        break;
+                    }
+                }
 
-            // if(count <= 12) cout <<"NET " << netId << " DO " << count << " times SmartRemove to reach the target" << endl;
+                if(count <= 12) cout <<"NET " << netId << " DO " << count << " times SmartRemove to reach the target" << endl;
+            }
 
             // //Refine stage
             // int rf = 0;//作微調
@@ -2070,105 +2191,75 @@ void DetailedMgr::PostProcessing(){
             // }    
             // cout <<"NET " << netId << " DO " << refinetimes << " times SmartRefine" << endl;
 
-            // //Remove again
-            // //SmartRemove stage
-            // ReachTarget = true;
-            // rm = 0;
-
-            // for(size_t layId = 0; layId < _vNetGrid[netId].size(); layId ++){
-            //     rm += _vNetGrid[netId][layId].size();
-            // }
-
-            // rm = rm/50;
-           
-            // count = 0;
-
-            // while(ReachTarget){
-            //     ReachTarget = SmartRemove(netId,rm);
-            //     rm = (int)(rm/1.25);//隨便設一個遞減函數
-            //     count ++;
-            //     if(count > 5){
-            //         cout << "######OUT of TIME########" << endl; 
-            //         break;
-            //     }
-            // }
-
-            // if(count <= 5) cout <<"NET " << netId << " DO " << count << " times SmartRemove to reach the target" << endl;
-    }
-    //SmartRemove 2nd stage
-    //first stage smartRemove
-    vector<std::thread> threads_remove_2nd;
-    for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
-        if(_NeedSecondRemove[netId]){
-            threads_remove_2nd.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId); }));
         }
-    }
-    for (std::thread& t : threads_remove_2nd) {
-        t.join();
+        cout << "finish all post processing" << endl;
     }
 }
 
-void DetailedMgr::RemoveIsolatedGrid(){
-    //thread test
-    vector<std::thread> threads;
-    for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
-        threads.push_back(std::thread([this, netId](){ RemoveIsolatedGrid_singleNet(netId); }));
+void DetailedMgr::RemoveIsolatedGrid(bool threading){
+    //thread 
+    if(threading){
+        vector<std::thread> threads;
+        for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
+            threads.push_back(std::thread([this, netId](){ RemoveIsolatedGrid_singleNet(netId); }));
+        }
+        for (std::thread& t : threads) {
+            t.join();
+        }
     }
-    for (std::thread& t : threads) {
-        t.join();
+    else{
+        for(size_t netId=0; netId < _vNetGrid.size(); netId++){
+            for(size_t layId=0; layId<_vNetGrid[netId].size(); layId++){
+                Grid* r = new Grid(0,0,0);
+                for(size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId++){
+                    int Remove = 0;
+                    Grid* grid = _vNetGrid[netId][layId][gridId];
+                    int xId = grid->xId();
+                    int yId = grid->yId();
+                
+                    if (legal(xId+1, yId)) {
+                        Grid* rGrid = _vGrid[layId][xId+1][yId];
+                        if (rGrid->hasNet(netId)) {
+                            Remove += 1;
+                        }
+                    }
+                    if (legal(xId-1, yId)) {
+                        Grid* lGrid = _vGrid[layId][xId-1][yId];
+                        if (lGrid->hasNet(netId)) {
+                            Remove += 1;
+                        }
+                    }
+                    if (legal(xId, yId+1)) {
+                        Grid* uGrid = _vGrid[layId][xId][yId+1];
+                        if (uGrid->hasNet(netId)) {
+                            Remove += 1;
+                        }
+                    }
+                    if (legal(xId, yId-1)) {
+                        Grid* dGrid = _vGrid[layId][xId][yId-1];
+                        if (dGrid->hasNet(netId)) {
+                            Remove += 1;
+                        }
+                    }
+                    //Remove
+                    if(Remove < 2){
+                        grid->removeNet(netId);//remove it from net
+                        grid->decCongestCur();
+                        _vNetGrid[netId][layId][gridId] = r; 
+                    }
+                }
+                for(size_t layId = 0; layId < _vNetGrid[netId].size();layId ++){
+                    _vNetGrid[netId][layId].erase(std::remove(_vNetGrid[netId][layId].begin(),_vNetGrid[netId][layId].end(), r), _vNetGrid[netId][layId].end());
+                }
+                delete r;
+            }
+        }
     }
-
-    // for(size_t netId=0; netId < _vNetGrid.size(); netId++){
-    //     for(size_t layId=0; layId<_vNetGrid[netId].size(); layId++){
-    //         Grid* r = new Grid(0,0,0);
-    //         for(size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId++){
-    //             int Remove = 0;
-    //             Grid* grid = _vNetGrid[netId][layId][gridId];
-    //             int xId = grid->xId();
-    //             int yId = grid->yId();
-            
-    //             if (legal(xId+1, yId)) {
-    //                 Grid* rGrid = _vGrid[layId][xId+1][yId];
-    //                 if (rGrid->hasNet(netId)) {
-    //                     Remove += 1;
-    //                 }
-    //             }
-    //             if (legal(xId-1, yId)) {
-    //                 Grid* lGrid = _vGrid[layId][xId-1][yId];
-    //                 if (lGrid->hasNet(netId)) {
-    //                     Remove += 1;
-    //                 }
-    //             }
-    //             if (legal(xId, yId+1)) {
-    //                 Grid* uGrid = _vGrid[layId][xId][yId+1];
-    //                 if (uGrid->hasNet(netId)) {
-    //                     Remove += 1;
-    //                 }
-    //             }
-    //             if (legal(xId, yId-1)) {
-    //                 Grid* dGrid = _vGrid[layId][xId][yId-1];
-    //                 if (dGrid->hasNet(netId)) {
-    //                     Remove += 1;
-    //                 }
-    //             }
-    //             //Remove
-    //             if(Remove < 2){
-    //                 grid->removeNet(netId);//remove it from net
-    //                 grid->decCongestCur();
-    //                 _vNetGrid[netId][layId][gridId] = r; 
-    //             }
-    //         }
-    //         for(size_t layId = 0; layId < _vNetGrid[netId].size();layId ++){
-    //             _vNetGrid[netId][layId].erase(std::remove(_vNetGrid[netId][layId].begin(),_vNetGrid[netId][layId].end(), r), _vNetGrid[netId][layId].end());
-    //         }
-    //         delete r;
-    //     }
-    // }
 }
 
 void DetailedMgr::RemoveIsolatedGrid_singleNet(size_t netId){
     for(size_t layId=0; layId<_vNetGrid[netId].size(); layId++){
-        Grid* r = new Grid(0,0,0);
+        Grid* r = new Grid(-1,-1,netId);
         for(size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId++){
             int Remove = 0;
             Grid* grid = _vNetGrid[netId][layId][gridId];
@@ -2213,6 +2304,8 @@ void DetailedMgr::RemoveIsolatedGrid_singleNet(size_t netId){
     }
 
 }
+
+
 
 
 void DetailedMgr::writeColorMap_v2(const char* path, bool isVoltage) {
