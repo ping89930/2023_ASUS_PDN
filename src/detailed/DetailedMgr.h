@@ -120,7 +120,7 @@ class DetailedMgr {
         bool NetEdgeDetect(size_t netId, size_t layId, Grid* grid);
         void SmartDistribute(bool threading);
         void PostProcessing(bool threading);
-        void SmartRemove_singleNet(size_t netId);
+        void SmartRemove_singleNet(size_t netId, int k);
         //void SmartGrow_singleNet(size_t netId);
         void RemoveIsolatedGrid(bool threading);
         void RemoveIsolatedGrid_singleNet(size_t netId);

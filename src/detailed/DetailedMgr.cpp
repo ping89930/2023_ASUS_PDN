@@ -1949,8 +1949,20 @@ void DetailedMgr::SmartDistribute(bool threading){
     }
 }
 
-void DetailedMgr::SmartRemove_singleNet(size_t netId){
+void DetailedMgr::SmartRemove_singleNet(size_t netId, int k){
     bool ReachTarget = true;
+
+    for(size_t tPortId = 0; tPortId < _vTPortCurr[netId].size();tPortId++){
+        if(_vTPortCurr[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->current()){
+            ReachTarget = false;
+            break;
+        }
+        if(_vTPortVolt[netId][tPortId] < _db.vNet(netId)->targetPort(tPortId)->voltage()){
+            ReachTarget = false;
+            break;
+        }
+    }
+            
     int rm = 0;
 
     for(size_t layId = 0; layId < _vNetGrid[netId].size(); layId ++){
@@ -1965,7 +1977,7 @@ void DetailedMgr::SmartRemove_singleNet(size_t netId){
         ReachTarget = SmartRemove(netId,rm);
         rm = (int)(rm/1.2);//隨便設一個遞減函數
         count ++;
-        if(count > 12){
+        if(count > k){
             cout << "######OUT of TIME########" << endl; 
             break;
         }
@@ -1987,7 +1999,7 @@ void DetailedMgr::PostProcessing(bool threading){
     if(threading){
         vector<std::thread> threads_remove_1st;
         for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
-            threads_remove_1st.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId); }));
+            threads_remove_1st.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId,12); }));
         }
         for (std::thread& t : threads_remove_1st) {
             t.join();
@@ -2049,7 +2061,7 @@ void DetailedMgr::PostProcessing(bool threading){
         vector<std::thread> threads_remove_2nd;
         for(size_t netId = 0; netId < _vNetGrid.size(); netId++){
             if(_NeedSecondRemove[netId]){
-                threads_remove_2nd.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId); }));
+                threads_remove_2nd.push_back(std::thread([this, netId](){ SmartRemove_singleNet(netId,3); }));
             }
         }
         for (std::thread& t : threads_remove_2nd) {
