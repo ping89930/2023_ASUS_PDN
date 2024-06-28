@@ -15,7 +15,7 @@ using namespace std;
 int main(int argc, char* argv[]){
 
     ifstream finST, fin, finOb, finPa;
-    ofstream fout, ftunRes;
+    ofstream fout, ftunRes, fcsv;
     finST.open(argv[1], ifstream::in);
     if (finST.is_open()) {
         cout << "input file (st components) is opened successfully" << endl;
@@ -78,6 +78,12 @@ int main(int argc, char* argv[]){
     } else {
         cerr << "Error opening tuning result file" << endl;
     }
+    fcsv.open(argv[7], ofstream::out);
+    if (fcsv.is_open()) {
+        cout << "Tuning Result file is opened successfully" << endl;
+    } else {
+        cerr << "Error opening tuning result file" << endl;
+    }
     // ofstream fout1;
     // fout1.open(argv[2], ofstream::out);
     // if (fout1.is_open()) {
@@ -88,11 +94,11 @@ int main(int argc, char* argv[]){
     double gridWidth = 1;
 
     // For Example 1
-    // double boardWidth = 75*gridWidth;
-    // double boardHeight = 40*gridWidth;
-    // size_t numLayers = 4;
-    // double offsetX = 40;
-    // double offsetY = 40;
+    double boardWidth = 75*gridWidth;
+    double boardHeight = 40*gridWidth;
+    size_t numLayers = 4;
+    double offsetX = 40;
+    double offsetY = 40;
 
     // For Example 2 
     // double boardWidth = 100*gridWidth;
@@ -109,11 +115,11 @@ int main(int argc, char* argv[]){
     // double offsetY = 20;
 
     // // For Example 4 
-    double boardWidth = 80*gridWidth;
-    double boardHeight = 55*gridWidth;
-    size_t numLayers = 4;
-    double offsetX = 120;
-    double offsetY = 10;
+    // double boardWidth = 80*gridWidth;
+    // double boardHeight = 55*gridWidth;
+    // size_t numLayers = 4;
+    // double offsetX = 120;
+    // double offsetY = 10;
 
     // // For Example 5
     // double boardWidth = 90*gridWidth;
@@ -205,12 +211,10 @@ int main(int argc, char* argv[]){
     // printf("\n==================== buildMtx ===================\n");
     //detailedMgr->buildMtx();
     //detailedMgr->SmartDistribute();
-    time_t t1, t2;
-    time(&t1);
-    detailedMgr->PostProcessing(0);
-    detailedMgr->RemoveIsolatedGrid(0);
-    time(&t2);
-    cout << "post processing time used : " << t2-t1 << endl;
+   
+    detailedMgr->PostProcessing(1);
+    detailedMgr->RemoveIsolatedGrid(1);
+    detailedMgr->writeCSV(fcsv);
     //detailedMgr->plotGridMap();
 
     time(&end);
@@ -229,8 +233,8 @@ int main(int argc, char* argv[]){
     //detailedMgr->plotGridMapVoltage();
     //detailedMgr->plotGridMapCurrent();
 
-    detailedMgr->writeColorMap_v2("../../exp/output/voltageColorMap.txt", 1);
-    detailedMgr->writeColorMap_v2("../../exp/output/currentColorMap.txt", 0);
+    //detailedMgr->writeColorMap_v2("../../exp/output/voltageColorMap.txt", 1);
+    //detailedMgr->writeColorMap_v2("../../exp/output/currentColorMap.txt", 0);
     //globalMgr.plotDB();
     OutputWriter outputWriter;
 

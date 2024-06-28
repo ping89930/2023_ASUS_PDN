@@ -2357,3 +2357,271 @@ void DetailedMgr::writeColorMap_v2(const char* path, bool isVoltage) {
     printf("--- finish write color map ---\n");
     fclose(fp);
 }
+
+void DetailedMgr::writeCSV(ofstream& file){
+
+    auto gridEnclose = [&] (Grid* grid, double x, double y) -> bool {
+        double gridLX = grid->xId() * _gridWidth;
+        double gridUX = (grid->xId()+1) * _gridWidth;
+        double gridLY = grid->yId() * _gridWidth;
+        double gridUY = (grid->yId()+1) * _gridWidth;
+        // to avoid a via enclosed by multiple grids, set ">=" but "<" only
+        return ((x >= gridLX) && (x < gridUX) && (y >= gridLY) && (y < gridUY));
+    };
+
+    std:: cout << "write CSV file" << endl;
+    file << "netID,layerID,nodeID,sourceV,sourceI,Svia,Tvia,viaG,SVR,TIR,MidLineDis,Dir1,Dir2,Dir3,Dir4,Dir5,Dir6,Dir7,Dir8,voltage,current\n";
+    for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
+        for (size_t layId = 0; layId < _db.numLayers(); ++ layId) {
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                double g2g_condutance = _db.vMetalLayer(layId)->conductivity() * _db.vMetalLayer(layId)->thickness() * 1E-3;
+                Grid* grid = _vNetGrid[netId][layId][gridId];
+                //grid position
+                double Nx = grid->xId()*_gridWidth;
+                double Ny = grid->yId()*_gridWidth; 
+                Net* net = _db.vNet(netId);
+                //source voltage position
+                double Sx = net->sourcePort()->boundPolygon()->ctrX();
+                double Sy = net->sourcePort()->boundPolygon()->ctrY();
+                // target load position
+                vector<pair<double,double>> Target;
+                for (size_t netTPortId = 0; netTPortId < net->numTPorts(); ++ netTPortId) {
+                    double Tx = net->targetPort(netTPortId)->boundPolygon()->ctrX();
+                    double Ty = net->targetPort(netTPortId)->boundPolygon()->ctrY();
+                    Target.push_back(make_pair(Tx,Ty));
+                }
+                //via conductance
+                double viaG = 0;
+    
+                //netID
+                file << netId;
+                file << ",";
+                //layerID
+                file << layId;
+                file << ",";
+                //nodeID
+                file << gridId;
+                file << ",";
+                //source Voltage
+                file << net->sourcePort()->voltage();
+                file << ",";
+                //source Current
+                file << net->sourcePort()->current();
+                file << ",";
+                //neighborR
+                // TODO : calculate neighbor grids effective resistance //
+                // 先不做這部分測試看看
+                //file << ",";
+                //Svia -> is source via
+                double Svia = 0; 
+                for (size_t sViaId = 0; sViaId < _db.vNet(netId)->sourceViaCstr()->numVias(); ++ sViaId) {
+                    double sX = _db.vNet(netId)->sourceViaCstr()->vVia(sViaId)->x();
+                    double sY = _db.vNet(netId)->sourceViaCstr()->vVia(sViaId)->y();
+                    if (gridEnclose(grid, sX, sY)) Svia = 1;
+                }
+                file << Svia;
+                file << ",";
+                //Tvia -> is target via
+                double Tvia = 0; 
+                for (size_t tPortId = 0; tPortId < _db.vNet(netId)->numTPorts(); ++ tPortId) {
+                    for (size_t tViaId = 0; tViaId < _db.vNet(netId)->vTargetViaCstr(tPortId)->numVias(); ++ tViaId) {
+                        double tX = _db.vNet(netId)->vTargetViaCstr(tPortId)->vVia(tViaId)->x();
+                        double tY = _db.vNet(netId)->vTargetViaCstr(tPortId)->vVia(tViaId)->y();
+                        if (gridEnclose(grid, tX, tY)) Tvia = 1;
+                    }
+                }
+                file << Tvia;
+                file << ",";
+                //viaG
+                if (layId > 0) {
+                    viaG = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId-1)->thickness()+ _db.vMediumLayer(layId)->thickness()+0.5* _db.vMetalLayer(layId)->thickness()));
+                }
+                if (layId < _db.numLayers() - 1) {
+                    viaG = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId)->thickness()+ _db.vMediumLayer(layId+1)->thickness()+0.5* _db.vMetalLayer(layId+1)->thickness()));
+                }
+                file << viaG;
+                file << ",";
+                //SVR (effective R to source voltage)
+                double L = std::sqrt(pow(Nx - Sx, 2) +  pow(Ny - Sy, 2));
+                double SVR = 0;
+                if(L == 0) SVR = INFINITY;
+                else SVR = g2g_condutance / L;
+                
+                file << SVR;
+                file << ",";
+                //TLR (effective R to target load)
+                double TLR = 0;
+                for(size_t tId = 0; tId < Target.size(); tId++){
+                    double TLR_temp = 0;
+                    double Tx = Target[tId].first;
+                    double Ty = Target[tId].second;
+                    double L = std::sqrt(pow(Nx - Tx, 2) +  pow(Ny - Ty, 2));
+                    if(L == 0) TLR_temp = INFINITY;
+                    else TLR_temp = g2g_condutance / L;
+                    
+                    TLR += TLR_temp;
+                }
+                file << TLR;
+                file << ",";
+                //MidLineDis (distance to source-load line)
+                double MLD = INFINITY;
+                for(size_t tId = 0; tId < Target.size(); tId++){
+                    double MLD_temp;
+                    double Tx = Target[tId].first;
+                    double Ty = Target[tId].second;
+                    
+                    double m = (Ty - Sy) / (Tx - Sx);
+                    double c = Sy - m * Sx;
+                    double A_coef = m;
+                    double B_coef = -1.0;
+                    double C_coef = c;
+                    MLD_temp = std::abs(A_coef * Nx + B_coef * Ny + C_coef) / std::sqrt(A_coef * A_coef + B_coef * B_coef);
+                    if(MLD_temp < MLD) MLD = MLD_temp;
+                }
+                file << MLD;
+                file << ",";
+                //Dir1 
+                double startX = grid->xId();
+                double startY = grid->yId();
+                double X = startX - 1 ;
+                double Y = startY;
+                double num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        X -= 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Dir2 
+                X = startX - 1;
+                Y = startY - 1;
+                num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        X -= 1;
+                        Y -= 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Dir3 
+                X = startX;
+                Y = startY+1;
+                num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        Y += 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Dir4 
+                X = startX+1;
+                Y = startY+1;
+                num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        X += 1;
+                        Y += 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Dir5 
+                X = startX+1;
+                Y = startY;
+                num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        X += 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Dir6
+                X = startX+1;
+                Y = startY-1;
+                num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        X += 1;
+                        Y -= 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Dir7 
+                X = startX;
+                Y = startY-1;
+                num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        Y -= 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Dir8 
+                X = startX-1;
+                Y = startY-1;
+                num = 0;
+                while(legal(X,Y)){
+                    Grid* Grid_temp = _vGrid[layId][X][Y];
+                    if(Grid_temp->hasNet(netId)){
+                        num ++;
+                        X -= 1;
+                        Y -= 1;
+                    }
+                    else{
+                        break;
+                    }
+                }
+                file << num;
+                file << ",";
+                //Volate 
+                file << grid->voltage(netId);
+                file << ",";
+                //Current
+                file << grid->current(netId);
+                file << "\n";            
+            }
+        }
+    }
+    std::cout << "finish writing CSV file" << endl;
+}

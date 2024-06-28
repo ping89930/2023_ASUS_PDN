@@ -125,7 +125,7 @@ class DetailedMgr {
         void RemoveIsolatedGrid(bool threading);
         void RemoveIsolatedGrid_singleNet(size_t netId);
         void writeColorMap_v2(const char*, bool);
-
+        void writeCSV(ofstream& file);
     private:
     
         vector< pair<double, double> > kMeansClustering(vector< pair<int,int> > vGrid, int numClusters, int numEpochs);
