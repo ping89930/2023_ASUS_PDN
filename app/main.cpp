@@ -94,11 +94,11 @@ int main(int argc, char* argv[]){
     double gridWidth = 1;
 
     // For Example 1
-    double boardWidth = 75*gridWidth;
-    double boardHeight = 40*gridWidth;
-    size_t numLayers = 4;
-    double offsetX = 40;
-    double offsetY = 40;
+    // double boardWidth = 75*gridWidth;
+    // double boardHeight = 40*gridWidth;
+    // size_t numLayers = 4;
+    // double offsetX = 40;
+    // double offsetY = 40;
 
     // For Example 2 
     // double boardWidth = 100*gridWidth;
@@ -115,11 +115,11 @@ int main(int argc, char* argv[]){
     // double offsetY = 20;
 
     // // For Example 4 
-    // double boardWidth = 80*gridWidth;
-    // double boardHeight = 55*gridWidth;
-    // size_t numLayers = 4;
-    // double offsetX = 120;
-    // double offsetY = 10;
+    double boardWidth = 80*gridWidth;
+    double boardHeight = 55*gridWidth;
+    size_t numLayers = 4;
+    double offsetX = 120;
+    double offsetY = 10;
 
     // // For Example 5
     // double boardWidth = 90*gridWidth;
@@ -214,6 +214,7 @@ int main(int argc, char* argv[]){
    
     detailedMgr->PostProcessing(1);
     detailedMgr->RemoveIsolatedGrid(1);
+    detailedMgr->Set_ST_distance();
     detailedMgr->writeCSV(fcsv);
     //detailedMgr->plotGridMap();
 

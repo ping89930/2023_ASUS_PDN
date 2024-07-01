@@ -125,6 +125,11 @@ class DetailedMgr {
         void RemoveIsolatedGrid(bool threading);
         void RemoveIsolatedGrid_singleNet(size_t netId);
         void writeColorMap_v2(const char*, bool);
+
+        //writing CSV
+        void Set_ST_distance();//set distance between each grid and source/target
+        void search_ToSource_distance(size_t netId, size_t layId, size_t xId, size_t yId);
+        void search_ToTarget_distance(size_t netId, size_t layId, size_t TportId, size_t xId, size_t yId);
         void writeCSV(ofstream& file);
     private:
     

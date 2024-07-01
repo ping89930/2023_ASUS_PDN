@@ -68,6 +68,15 @@ class Grid {
                 printf("%d ", _vNetId[i]);
             printf("\n");
         }
+
+        //to Source and Target distance (for writing CSV)
+        void setSdis(int dis, bool searched) { _Sdis = make_pair(dis, searched); }
+        void First_setTdis(int dis, bool searched) { _Tdis.push_back(make_pair(dis, searched)); }
+        void setTdis(size_t n , int dis, bool searched) { _Tdis[n] = make_pair(dis,searched); }
+        int getSdis() { return _Sdis.first; }
+        int getTdis(size_t n) { return _Tdis[n].first; }
+        bool hasSearched_source() { return _Sdis.second; }
+        bool hasSearched_Target( size_t n ) { return _Tdis[n].second; }
         
     private:
         int _congestion;    // _congestHis + _congestCur
@@ -80,6 +89,9 @@ class Grid {
         size_t _yId;
         vector<double> _vVoltage;    // index = [netId], the voltage of the grid center point, assigned in detailedMgr::buildMtx
         vector<double> _vCurrent;    // index = [netId], the current through the grid center point
+
+        pair<int, bool> _Sdis; // dis, hasSearch
+        vector<pair<int,bool>> _Tdis; // dis, hasSearch
 };
 
 enum GNodeStatus {

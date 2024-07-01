@@ -2370,11 +2370,12 @@ void DetailedMgr::writeCSV(ofstream& file){
     };
 
     std:: cout << "write CSV file" << endl;
-    file << "netID,layerID,nodeID,sourceV,sourceI,Svia,Tvia,viaG,SVR,TIR,MidLineDis,Dir1,Dir2,Dir3,Dir4,Dir5,Dir6,Dir7,Dir8,voltage,current\n";
+    file << "netID,layerID,nodeID,sourceV,sourceI,Svia,Tvia,loadC,viaU,viaD,SVR,TIR,MidLineDis,Dir1,Dir2,Dir3,Dir4,Dir5,Dir6,Dir7,Dir8,voltage,current\n";
     for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
         for (size_t layId = 0; layId < _db.numLayers(); ++ layId) {
             for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
                 double g2g_condutance = _db.vMetalLayer(layId)->conductivity() * _db.vMetalLayer(layId)->thickness() * 1E-3;
+                double viaU, viaD, loadC;
                 Grid* grid = _vNetGrid[netId][layId][gridId];
                 //grid position
                 double Nx = grid->xId()*_gridWidth;
@@ -2391,7 +2392,9 @@ void DetailedMgr::writeCSV(ofstream& file){
                     Target.push_back(make_pair(Tx,Ty));
                 }
                 //via conductance
-                double viaG = 0;
+                viaU = 0;
+                viaD = 0;
+                loadC = 0;
     
                 //netID
                 file << netId;
@@ -2417,7 +2420,7 @@ void DetailedMgr::writeCSV(ofstream& file){
                 for (size_t sViaId = 0; sViaId < _db.vNet(netId)->sourceViaCstr()->numVias(); ++ sViaId) {
                     double sX = _db.vNet(netId)->sourceViaCstr()->vVia(sViaId)->x();
                     double sY = _db.vNet(netId)->sourceViaCstr()->vVia(sViaId)->y();
-                    if (gridEnclose(grid, sX, sY)) Svia = 1;
+                    if (gridEnclose(grid, sX, sY))  Svia = 1;
                 }
                 file << Svia;
                 file << ",";
@@ -2427,22 +2430,31 @@ void DetailedMgr::writeCSV(ofstream& file){
                     for (size_t tViaId = 0; tViaId < _db.vNet(netId)->vTargetViaCstr(tPortId)->numVias(); ++ tViaId) {
                         double tX = _db.vNet(netId)->vTargetViaCstr(tPortId)->vVia(tViaId)->x();
                         double tY = _db.vNet(netId)->vTargetViaCstr(tPortId)->vVia(tViaId)->y();
-                        if (gridEnclose(grid, tX, tY)) Tvia = 1;
+                        if (gridEnclose(grid, tX, tY)){
+                            Tvia = 1;    
+                            if(layId == 0) loadC = _db.vNet(netId)->targetPort(tPortId)->current() / (_db.vNet(netId)->targetPort(tPortId)->voltage() * _db.vNet(netId)->targetPort(tPortId)->viaCluster()->numVias());        
+                            //can try 1.0/(1.0/via_condutance_up + 1.0/loadConductance)
+                        }
                     }
                 }
                 file << Tvia;
                 file << ",";
-                //viaG
+                file << loadC;
+                file << ",";
+                //viaU, viaD
                 if (layId > 0) {
-                    viaG = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId-1)->thickness()+ _db.vMediumLayer(layId)->thickness()+0.5* _db.vMetalLayer(layId)->thickness()));
+                    viaU = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId-1)->thickness()+ _db.vMediumLayer(layId)->thickness()+0.5* _db.vMetalLayer(layId)->thickness()));
                 }
                 if (layId < _db.numLayers() - 1) {
-                    viaG = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId)->thickness()+ _db.vMediumLayer(layId+1)->thickness()+0.5* _db.vMetalLayer(layId+1)->thickness()));
+                    viaD = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId)->thickness()+ _db.vMediumLayer(layId+1)->thickness()+0.5* _db.vMetalLayer(layId+1)->thickness()));
                 }
-                file << viaG;
+                file << viaU;
+                file << ",";
+                file << viaD;
                 file << ",";
                 //SVR (effective R to source voltage)
-                double L = std::sqrt(pow(Nx - Sx, 2) +  pow(Ny - Sy, 2));
+                //double L = std::sqrt(pow(Nx - Sx, 2) +  pow(Ny - Sy, 2));
+                double L = grid->getSdis() * _gridWidth;
                 double SVR = 0;
                 if(L == 0) SVR = INFINITY;
                 else SVR = g2g_condutance / L;
@@ -2455,7 +2467,8 @@ void DetailedMgr::writeCSV(ofstream& file){
                     double TLR_temp = 0;
                     double Tx = Target[tId].first;
                     double Ty = Target[tId].second;
-                    double L = std::sqrt(pow(Nx - Tx, 2) +  pow(Ny - Ty, 2));
+                    //double L = std::sqrt(pow(Nx - Tx, 2) +  pow(Ny - Ty, 2));
+                    double L = grid->getTdis(tId) * _gridWidth;
                     if(L == 0) TLR_temp = INFINITY;
                     else TLR_temp = g2g_condutance / L;
                     
@@ -2624,4 +2637,119 @@ void DetailedMgr::writeCSV(ofstream& file){
         }
     }
     std::cout << "finish writing CSV file" << endl;
+}
+
+
+void DetailedMgr::Set_ST_distance(){
+    cout << "set GST distance" << endl;
+    //first reset all grids
+    for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
+        Net* net = _db.vNet(netId);
+        for (size_t layId = 0; layId < _db.numLayers(); ++ layId) {
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                Grid* grid = _vNetGrid[netId][layId][gridId];
+                //source
+                grid->setSdis(INT32_MAX, false);
+                //target
+                for (size_t netTPortId = 0; netTPortId < net->numTPorts(); ++ netTPortId) {
+                    grid->First_setTdis(INT32_MAX,false);
+                }
+            }
+        }
+    }
+    //start search distance
+    //source distance
+     for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
+        Net* net = _db.vNet(netId);
+        int Startx = int(net->sourcePort()->boundPolygon()->ctrX()/_gridWidth);
+        int Starty = int(net->sourcePort()->boundPolygon()->ctrY()/_gridWidth);
+        
+        for (size_t layId = 0; layId < _db.numLayers(); ++ layId) {
+            Grid* grid = _vGrid[layId][Startx][Starty];
+            if(!grid->hasNet(netId)){
+                cout << "error finding GST distance" << endl;
+                break;
+            }
+            else{
+                grid->setSdis(0,true);
+                search_ToSource_distance(netId, layId, Startx, Starty);
+            }
+        }
+    }
+   
+    //target distance
+     for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
+        Net* net = _db.vNet(netId);
+        for (size_t netTPortId = 0; netTPortId < net->numTPorts(); ++ netTPortId) {
+            int Startx = int(net->targetPort(netTPortId)->boundPolygon()->ctrX()/_gridWidth);
+            int Starty = int(net->targetPort(netTPortId)->boundPolygon()->ctrY()/_gridWidth);
+            for (size_t layId = 0; layId < _db.numLayers(); ++ layId) {
+                Grid* grid = _vGrid[layId][Startx][Starty];
+                if(!grid->hasNet(netId)){
+                    cout << "error finding GST distance" << endl;
+                    break;
+                }
+                else{
+                    grid->setTdis(netTPortId,0,true);
+                    search_ToTarget_distance(netId, layId, netTPortId, Startx, Starty);
+                }
+            }   
+        }
+    }
+    //start 
+
+    cout << "finish setting GST distance" << endl;
+}
+
+void DetailedMgr::search_ToSource_distance(size_t netId, size_t layId, size_t xId, size_t yId){
+    const int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    std::queue<std::pair<size_t, size_t>> q;
+    q.push({xId, yId});
+    
+    // BFS
+    while (!q.empty()) {
+        pair<size_t, size_t> front = q.front();
+        size_t x = front.first;
+        size_t y = front.second;
+        q.pop();
+        
+        for (const auto& dir : directions) {
+            size_t new_x = x + dir[0];
+            size_t new_y = y + dir[1];
+            
+            if ( legal(new_x, new_y) && _vGrid[layId][new_x][new_y]->hasNet(netId)) {
+                if(!_vGrid[layId][new_x][new_y]->hasSearched_source() ){
+                    q.push({new_x, new_y});
+                    _vGrid[layId][new_x][new_y]->setSdis(_vGrid[layId][x][y]->getSdis() + 1, true); 
+                }
+            }
+        }
+    }
+}
+
+
+void DetailedMgr::search_ToTarget_distance(size_t netId, size_t layId, size_t TportId, size_t xId, size_t yId){
+     const int directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    std::queue<std::pair<size_t, size_t>> q;
+    q.push({xId, yId});
+    
+    // BFS
+    while (!q.empty()) {
+        pair<size_t, size_t> front = q.front();
+        size_t x = front.first;
+        size_t y = front.second;
+        q.pop();
+        
+        for (const auto& dir : directions) {
+            size_t new_x = x + dir[0];
+            size_t new_y = y + dir[1];
+            
+            if ( legal(new_x, new_y) && _vGrid[layId][new_x][new_y]->hasNet(netId)) {
+                if(!_vGrid[layId][new_x][new_y]->hasSearched_Target(TportId)){
+                    q.push({new_x, new_y});
+                    _vGrid[layId][new_x][new_y]->setTdis(TportId, _vGrid[layId][x][y]->getTdis(TportId) + 1, true); 
+                }
+            }
+        }
+    }
 }
