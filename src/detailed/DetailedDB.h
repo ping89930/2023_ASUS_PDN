@@ -70,14 +70,17 @@ class Grid {
         }
 
         //to Source and Target distance (for writing CSV)
-        void setSdis(int dis, bool searched) { _Sdis = make_pair(dis, searched); }
-        void First_setTdis(int dis, bool searched) { _Tdis.push_back(make_pair(dis, searched)); }
-        void setTdis(size_t n , int dis, bool searched) { _Tdis[n] = make_pair(dis,searched); }
-        int getSdis() { return _Sdis.first; }
-        int getTdis(size_t n) { return _Tdis[n].first; }
-        bool hasSearched_source() { return _Sdis.second; }
-        bool hasSearched_Target( size_t n ) { return _Tdis[n].second; }
-        
+        void First_setSdis(int dis, bool searched) { _Sdis.push_back(make_pair(dis, searched)); }
+        void First_setTdis(vector<pair<int,bool>> Target) { _Tdis.push_back(Target); }
+        void setSdis(size_t Id, int dis, bool searched) { _Sdis[Id] = make_pair(dis,searched); }
+        void setTdis(size_t Id, size_t n , int dis, bool searched) { _Tdis[n][Id] = make_pair(dis,searched); }
+        int getSdis(size_t Id) { return _Sdis[Id].first; }
+        int getTdis(size_t Id, size_t n) { return _Tdis[n][Id].first; }
+        bool hasSearched_source(size_t Id) { return _Sdis[Id].second; }
+        bool hasSearched_Target(size_t Id, size_t n ) { return _Tdis[n][Id].second; }
+        vector <pair<int, bool> > Sdis() { return _Sdis; }
+        vector <pair<int,bool> > Tdis(size_t n) { return _Tdis[n]; }
+
     private:
         int _congestion;    // _congestHis + _congestCur
         int _congestCur;    // current congestion cost
@@ -90,8 +93,8 @@ class Grid {
         vector<double> _vVoltage;    // index = [netId], the voltage of the grid center point, assigned in detailedMgr::buildMtx
         vector<double> _vCurrent;    // index = [netId], the current through the grid center point
 
-        pair<int, bool> _Sdis; // dis, hasSearch
-        vector<pair<int,bool>> _Tdis; // dis, hasSearch
+        vector<pair<int, bool>> _Sdis; // dis, hasSearch
+        vector<vector<pair<int,bool>>> _Tdis; // dis, hasSearch
 };
 
 enum GNodeStatus {

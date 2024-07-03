@@ -127,9 +127,10 @@ class DetailedMgr {
         void writeColorMap_v2(const char*, bool);
 
         //writing CSV
+        void Find_ViaGrid();
         void Set_ST_distance();//set distance between each grid and source/target
-        void search_ToSource_distance(size_t netId, size_t layId, size_t xId, size_t yId);
-        void search_ToTarget_distance(size_t netId, size_t layId, size_t TportId, size_t xId, size_t yId);
+        void search_ToSource_distance(size_t viaId, size_t netId, size_t layId, size_t xId, size_t yId);
+        void search_ToTarget_distance(size_t viaId, size_t netId, size_t layId, size_t TportId, size_t xId, size_t yId);
         void writeCSV(ofstream& file);
     private:
     
@@ -146,6 +147,8 @@ class DetailedMgr {
         size_t _numYs;
         vector< vector< double > > _vTPortVolt;     // index = [netId] [netTportId], record the target port voltage during simulation
         vector< vector< double > > _vTPortCurr;     // index = [netId] [netTportId], record the target port current during simulation
+        vector<vector<Grid*>> _SourceVia; //only one source port
+        vector<vector<vector<Grid*>>> _TargetVia;  //multiple target port
 
         // parameters for tuning
         size_t _numNegoIters;    // the number of negotiation iterations in each layer
