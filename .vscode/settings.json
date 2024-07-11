@@ -67,7 +67,8 @@
             "${workspaceFolder}/exp/input/obstacle.txt",
             "${workspaceFolder}/exp/output/output_case1_thread.html",
             "${workspaceFolder}/exp/output/tuningRes.txt",
-            "${workspaceFolder}/exp/output/case1.csv"
+            "${workspaceFolder}/exp/output/case1.csv",
+            "${workspaceFolder}/exp/input/result.txt"
         ]
         
     },

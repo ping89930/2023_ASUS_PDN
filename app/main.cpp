@@ -14,7 +14,7 @@ using namespace std;
 
 int main(int argc, char* argv[]){
 
-    ifstream finST, fin, finOb, finPa;
+    ifstream finST, fin, finOb, finPa, fresult;
     ofstream fout, ftunRes, fcsv;
     finST.open(argv[1], ifstream::in);
     if (finST.is_open()) {
@@ -84,6 +84,13 @@ int main(int argc, char* argv[]){
     } else {
         cerr << "Error opening tuning result file" << endl;
     }
+    fresult.open(argv[8], ifstream::in);
+    if (fresult.is_open()) {
+        cout << "voltage result file is opened successfully" << endl;
+    } else {
+        cerr << "Error opening input file" << endl;
+    }
+    
     // ofstream fout1;
     // fout1.open(argv[2], ofstream::out);
     // if (fout1.is_open()) {
@@ -214,8 +221,8 @@ int main(int argc, char* argv[]){
    
     detailedMgr->PostProcessing(1);
     detailedMgr->RemoveIsolatedGrid(1);
-    detailedMgr->Set_ST_distance();
-    detailedMgr->writeCSV(fcsv);
+    //detailedMgr->Set_ST_distance();
+    //detailedMgr->writeCSV(fcsv);
     //detailedMgr->plotGridMap();
 
     time(&end);
@@ -230,8 +237,9 @@ int main(int argc, char* argv[]){
         min = min%60;
     }
 
-    detailedMgr->plotGridMap();
-    //detailedMgr->plotGridMapVoltage();
+    //detailedMgr->set_voltage(fresult);
+    //detailedMgr->plotGridMap();
+    detailedMgr->plotGridMapVoltage();
     //detailedMgr->plotGridMapCurrent();
 
     //detailedMgr->writeColorMap_v2("../../exp/output/voltageColorMap.txt", 1);

@@ -2368,7 +2368,7 @@ void DetailedMgr::writeCSV(ofstream& file){
         // to avoid a via enclosed by multiple grids, set ">=" but "<" only
         return ((x >= gridLX) && (x < gridUX) && (y >= gridLY) && (y < gridUY));
     };
-
+    //SVR & TLR cost most of time -> need improvement
     std:: cout << "write CSV file" << endl;
     file << "netID,layerID,nodeID,sourceV,sourceI,Svia,Tvia,loadC,viaU,viaD,SVR,TIR,MidLineDis,Dir1,Dir2,Dir3,Dir4,Dir5,Dir6,Dir7,Dir8,voltage,current\n";
     for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
@@ -2816,4 +2816,164 @@ void DetailedMgr::Find_ViaGrid(){
             }
         }
     }
+}
+
+
+void DetailedMgr::set_voltage(ifstream& file){
+    std::string line;
+    
+    // Check if the file is open
+    if (!file.is_open()) {
+        std::cerr << "Unable to open file" << std::endl;
+        return;
+    }
+
+    auto gridEnclose = [&] (Grid* grid, double x, double y) -> bool {
+        double gridLX = grid->xId() * _gridWidth;
+        double gridUX = (grid->xId()+1) * _gridWidth;
+        double gridLY = grid->yId() * _gridWidth;
+        double gridUY = (grid->yId()+1) * _gridWidth;
+        // to avoid a via enclosed by multiple grids, set ">=" but "<" only
+        return ((x >= gridLX) && (x < gridUX) && (y >= gridLY) && (y < gridUY));
+    };
+
+
+    for(size_t netId = 0; netId < _vNetGrid.size(); ++ netId){
+        size_t numNode = 0;
+        map< tuple<size_t, size_t, size_t>, size_t > getID; // i = getID[layID, xId, yId] = ith node
+        for (size_t layId = 0; layId < _vNetGrid[netId].size(); ++ layId) {
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                getID[make_tuple(layId, _vNetGrid[netId][layId][gridId]->xId(), _vNetGrid[netId][layId][gridId]->yId())] = numNode;
+                numNode++;
+            }
+        }
+
+        // set voltage of each grid
+        for (size_t layId = 0; layId < _vNetGrid[netId].size(); ++ layId) {
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                Grid* grid_i = _vNetGrid[netId][layId][gridId];
+                getline(file, line);
+                std::stringstream ss(line);
+                float voltage;
+                if (ss >> voltage) {
+                    grid_i->setVoltage(netId, voltage);
+                } else {
+                    std::cerr << "Error converting line to float: " << line << std::endl;
+                }
+            }
+        }
+
+        // set current of each grid
+        for (size_t tPortId = 0; tPortId < _db.vNet(netId)->numTPorts(); ++ tPortId) {
+            _vTPortCurr[netId][tPortId] = 0.0;
+        }
+        assert(_vNetGrid[netId].size() == _db.numLayers());
+        for (size_t layId = 0; layId < _vNetGrid[netId].size(); ++ layId) {
+            double g2g_condutance = _db.vMetalLayer(layId)->conductivity() * _db.vMetalLayer(layId)->thickness() * 1E-3;
+            double via_condutance_up, via_condutance_down;
+            if (layId > 0) {
+                via_condutance_down = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId-1)->thickness()+ _db.vMediumLayer(layId)->thickness()+0.5* _db.vMetalLayer(layId)->thickness()));
+            }
+            if (layId < _db.numLayers() - 1) {
+                via_condutance_up = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId)->thickness()+ _db.vMediumLayer(layId+1)->thickness()+0.5* _db.vMetalLayer(layId+1)->thickness()));
+            }
+            double small_conductance = 1.0;
+
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                Grid* grid_i = _vNetGrid[netId][layId][gridId];
+                size_t xId = grid_i->xId();
+                size_t yId = grid_i->yId();
+                size_t node_id = getID[make_tuple(layId, grid_i->xId(), grid_i->yId())];
+                double g2g_condutance = _db.vMetalLayer(layId)->conductivity() * _db.vMetalLayer(layId)->thickness() * 1E-3;
+                double via_condutance_up, via_condutance_down;
+                if (layId > 0) {
+                    via_condutance_down = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId-1)->thickness()+ _db.vMediumLayer(layId)->thickness()+0.5* _db.vMetalLayer(layId)->thickness()));
+                }
+                if (layId < _db.numLayers() - 1) {
+                    via_condutance_up = (_db.vMetalLayer(0)->conductivity() * _db.VIA16D8A24()->metalArea() * 1E-6) / (1E-3 * (0.5*_db.vMetalLayer(layId)->thickness()+ _db.vMediumLayer(layId+1)->thickness()+0.5* _db.vMetalLayer(layId+1)->thickness()));
+                }
+                if (gridId == 0) {
+                    // cerr << "layer" << layId << ": g2g_conductance = " << g2g_condutance << ", via_conductance_up = " << via_condutance_up;
+                    // cerr << ", via_conductance_down = " << via_condutance_down << endl;
+                }
+                double small_conductance = 1.0;
+                double current = 0;
+                size_t nbrId;
+                if (legal(xId+1, yId)) {
+                    if (_vGrid[layId][xId+1][yId]->hasNet(netId)) {
+                        current += abs(grid_i->voltage(netId) - _vGrid[layId][xId+1][yId]->voltage(netId)) * g2g_condutance;
+                    }
+                }
+                if (legal(xId-1, yId)) {
+                    if (_vGrid[layId][xId-1][yId]->hasNet(netId)) {
+                        current += abs(grid_i->voltage(netId) - _vGrid[layId][xId-1][yId]->voltage(netId)) * g2g_condutance;
+                    }
+                }
+                if (legal(xId, yId+1)) {
+                    if (_vGrid[layId][xId][yId+1]->hasNet(netId)) {
+                        current += abs(grid_i->voltage(netId) - _vGrid[layId][xId][yId+1]->voltage(netId)) * g2g_condutance;
+                    }
+                }
+                if (legal(xId, yId-1)) {
+                    if (_vGrid[layId][xId][yId-1]->hasNet(netId)) {
+                        current += abs(grid_i->voltage(netId) - _vGrid[layId][xId][yId-1]->voltage(netId)) * g2g_condutance;
+                    }
+                }
+                // via current
+                for (size_t sViaId = 0; sViaId < _db.vNet(netId)->sourceViaCstr()->numVias(); ++ sViaId) {
+                    double sX = _db.vNet(netId)->sourceViaCstr()->vVia(sViaId)->x();
+                    double sY = _db.vNet(netId)->sourceViaCstr()->vVia(sViaId)->y();
+                    if (gridEnclose(grid_i, sX, sY)) {
+                        // cerr << "Enclose: net" << netId << " layer" << layId << " source, grid = (" << grid_i->xId() << ", " << grid_i->yId() << ")" << endl; 
+                        if (layId > 0) {
+                            current += abs(grid_i->voltage(netId) - _vGrid[layId-1][xId][yId]->voltage(netId)) * via_condutance_down;
+                        } else {
+                            current += abs(grid_i->voltage(netId) - _db.vNet(netId)->sourcePort()->voltage()) * via_condutance_up;
+                        }
+                        if (layId < _db.numLayers()-1) {
+                            current += abs(grid_i->voltage(netId) - _vGrid[layId+1][xId][yId]->voltage(netId)) * via_condutance_up;
+                        }
+                    }
+                }
+                for (size_t tPortId = 0; tPortId < _db.vNet(netId)->numTPorts(); ++ tPortId) {
+                    // double tPortCurr = 0;
+                    double loadConductance = _db.vNet(netId)->targetPort(tPortId)->current() / (_db.vNet(netId)->targetPort(tPortId)->voltage()* _db.vNet(netId)->targetPort(tPortId)->viaCluster()->numVias());
+                    for (size_t tViaId = 0; tViaId < _db.vNet(netId)->vTargetViaCstr(tPortId)->numVias(); ++ tViaId) {
+                        double tX = _db.vNet(netId)->vTargetViaCstr(tPortId)->vVia(tViaId)->x();
+                        double tY = _db.vNet(netId)->vTargetViaCstr(tPortId)->vVia(tViaId)->y();
+                        if (gridEnclose(grid_i, tX, tY)) {
+                            if (layId > 0) {
+                                current += abs(grid_i->voltage(netId) - _vGrid[layId-1][xId][yId]->voltage(netId)) * via_condutance_down;
+                            } else {
+                                current += abs(grid_i->voltage(netId)) /(1.0/via_condutance_up + 1.0/loadConductance);
+                                _vTPortCurr[netId][tPortId] += abs(grid_i->voltage(netId)) /(1.0/via_condutance_up + 1.0/loadConductance);
+                                cerr << "net" << netId << ", tPort" << tPortId << ": voltage = " << grid_i->voltage(netId);
+                                cerr << ", current = " << abs(grid_i->voltage(netId)) /(1.0/via_condutance_up + 1.0/loadConductance) << endl;
+                            }
+                            if (layId < _db.numLayers()-1) {
+                                current += abs(grid_i->voltage(netId) - _vGrid[layId+1][xId][yId]->voltage(netId)) * via_condutance_up;
+                            } 
+                        }
+                    }
+                    // _vTPortCurr[netId][tPortId] += tPortCurr;
+                    // _vTPortCurr[netId].push_back(tPortCurr);
+                    // _vTPortVolt[netId].push_back(tPortCurr / loadConductance);
+                    // cerr << "tPortCurr = " << tPortCurr << ", tPortVolt = " << _vTPortVolt[netId][tPortId] << endl;
+                }
+                grid_i->setCurrent(netId, current * 0.5);
+                // cerr << "gridCurrent = " << current * 0.5 << endl;
+            }
+        }
+    }
+
+    for (size_t netId = 0; netId < _db.numNets(); ++ netId) {
+        for (size_t tPortId = 0; tPortId < _db.vNet(netId)->numTPorts(); ++ tPortId) {
+            double loadResistance = _db.vNet(netId)->targetPort(tPortId)->voltage() / _db.vNet(netId)->targetPort(tPortId)->current();
+            _vTPortVolt[netId][tPortId] = _vTPortCurr[netId][tPortId] * loadResistance;
+            cerr << "net" << netId << " tPort" << tPortId << ": current = " << _vTPortCurr[netId][tPortId];
+            cerr << ", voltage = " << _vTPortVolt[netId][tPortId] << endl;
+        }
+    }
+    file.clear();                 // Clear any error flags
+    file.seekg(0, std::ios::beg); // Move the file pointer to the beginning
 }

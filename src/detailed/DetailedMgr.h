@@ -128,10 +128,13 @@ class DetailedMgr {
 
         //writing CSV
         void Find_ViaGrid();
-        void Set_ST_distance();//set distance between each grid and source/target
+        void Set_ST_distance();//set distance between each grid and source/target -> can be set at the same time with AStar routing (undo)
         void search_ToSource_distance(size_t viaId, size_t netId, size_t layId, size_t xId, size_t yId);
         void search_ToTarget_distance(size_t viaId, size_t netId, size_t layId, size_t TportId, size_t xId, size_t yId);
         void writeCSV(ofstream& file);
+
+        //inference 
+        void set_voltage(ifstream& file);
     private:
     
         vector< pair<double, double> > kMeansClustering(vector< pair<int,int> > vGrid, int numClusters, int numEpochs);
