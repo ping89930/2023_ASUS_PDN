@@ -2455,10 +2455,10 @@ void DetailedMgr::writeCSV(ofstream& file){
                 //SVR (effective R to source voltage)
                 //double L = std::sqrt(pow(Nx - Sx, 2) +  pow(Ny - Sy, 2));
                 int L = grid->Sdis()[0].first;
-                for(size_t i = 1; i < grid->Sdis().size(); i++){
-                    if(grid->Sdis()[i].first < L) L = grid->Sdis()[i].first;
-                    if(L == 0) break;
-                }
+                // for(size_t i = 1; i < grid->Sdis().size(); i++){
+                //     if(grid->Sdis()[i].first < L) L = grid->Sdis()[i].first;
+                //     if(L == 0) break;
+                // }
                 double SVR = 0;
                 if(L == 0) SVR = INFINITY;
                 else SVR = g2g_condutance / (L*_gridWidth);
@@ -2473,10 +2473,10 @@ void DetailedMgr::writeCSV(ofstream& file){
                     double Ty = Target[tId].second;
                     //double L = std::sqrt(pow(Nx - Tx, 2) +  pow(Ny - Ty, 2));
                     int L = grid->Tdis(tId)[0].first;
-                    for(size_t i = 1; i < grid->Tdis(tId).size(); i++){
-                        if(grid->Tdis(tId)[i].first < L) L = grid->Tdis(tId)[i].first;
-                        if(L == 0) break;
-                    }
+                    // for(size_t i = 1; i < grid->Tdis(tId).size(); i++){
+                    //     if(grid->Tdis(tId)[i].first < L) L = grid->Tdis(tId)[i].first;
+                    //     if(L == 0) break;
+                    // }
                     if(L == 0) TLR_temp = INFINITY;
                     else TLR_temp = g2g_condutance / (L*_gridWidth);
                     
@@ -2678,9 +2678,10 @@ void DetailedMgr::Set_ST_distance(){
      for (size_t netId = 0; netId < _db.numNets(); ++ netId) {        
         for (size_t layId = 0; layId < _db.numLayers(); ++ layId) {
             for(size_t Svia = 0; Svia < _SourceVia[netId].size(); Svia++){
-                Grid* grid = _SourceVia[netId][Svia];
-                size_t Startx = grid->xId();
-                size_t Starty = grid->yId();
+                Grid* Sgrid = _SourceVia[netId][Svia];
+                size_t Startx = Sgrid->xId();
+                size_t Starty = Sgrid->yId();
+                Grid* grid = _vGrid[layId][Startx][Starty];
                 if(!grid->hasNet(netId)){
                     cout << "error finding GST distance (source)" << endl;
                     break;
@@ -2699,9 +2700,10 @@ void DetailedMgr::Set_ST_distance(){
         for (size_t netTPortId = 0; netTPortId < net->numTPorts(); ++ netTPortId) {
             for (size_t layId = 0; layId < _db.numLayers(); ++ layId) {
                 for(size_t Tvia = 0; Tvia < _TargetVia[netId][netTPortId].size(); Tvia++){
-                    Grid* grid = _TargetVia[netId][netTPortId][Tvia];
-                    size_t Startx = grid->xId();
-                    size_t Starty = grid->yId();
+                    Grid* Tgrid = _TargetVia[netId][netTPortId][Tvia];
+                    size_t Startx = Tgrid->xId();
+                    size_t Starty = Tgrid->yId();
+                    Grid* grid = _vGrid[layId][Startx][Starty];
                     if(!grid->hasNet(netId)){
                         cout << "error finding GST distance (target)" << endl;
                         break;
@@ -2976,4 +2978,69 @@ void DetailedMgr::set_voltage(ifstream& file){
     }
     file.clear();                 // Clear any error flags
     file.seekg(0, std::ios::beg); // Move the file pointer to the beginning
+}
+
+bool comparator(const pair<int, bool>& a, const pair<int, bool>& b) {
+    return a.first < b.first;
+}
+void Grid::Sort_ST_dis(){
+    std::sort(_Sdis.begin(), _Sdis.end(), comparator);
+    // Sort each vector inside _Tdis using the custom comparator
+    for (auto& vec : _Tdis) {
+        std::sort(vec.begin(), vec.end(), comparator);
+    }
+}
+
+void DetailedMgr::Sort_allSTdis(){
+    for(size_t netId = 0; netId < _vNetGrid.size(); ++ netId){
+        for (size_t layId = 0; layId < _vNetGrid[netId].size(); ++ layId) {
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                Grid* grid = _vNetGrid[netId][layId][gridId];
+                grid->Sort_ST_dis();
+            }
+        }
+    }
+}
+
+void DetailedMgr::visulaize_STdis(ofstream& fileS, ofstream& fileT){
+    //S
+    fileS << "<!DOCTYPE html>\n<html>\n<head>\n<title>Grid Map Visualization</title>\n</head>\n<body>\n";
+
+    string svg = "<svg width='" + std::to_string(5000) + "' height='" + std::to_string(5000) + "' xmlns='http://www.w3.org/2000/svg'>\n";
+
+    for(size_t netId = 0; netId < _vNetGrid.size(); ++ netId){
+        for (size_t layId = 0; layId < _vNetGrid[netId].size(); ++ layId) {
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                Grid* grid = _vNetGrid[netId][layId][gridId];
+                grid->Sort_ST_dis();
+                int colorValue = grid->Sdis()[0].first % 256;
+                std::string color = "rgb(" + std::to_string(colorValue) + "," + std::to_string(colorValue) + "," + std::to_string(colorValue) + ")";
+                svg += "<rect x='" + std::to_string(grid->xId()+(500*(layId))) + "' y='" + std::to_string(grid->yId()) + "' width='" + std::to_string(1) + "' height='" + std::to_string(1) + "' fill='" + color + "' />\n";
+            }
+        }
+    }
+    svg += "</svg>\n";
+    fileS << svg;
+    fileS << "</body>\n</html>\n";
+
+    //T
+    fileT << "<!DOCTYPE html>\n<html>\n<head>\n<title>Grid Map Visualization</title>\n</head>\n<body>\n";
+
+    string svgT = "<svg width='" + std::to_string(5000) + "' height='" + std::to_string(5000) + "' xmlns='http://www.w3.org/2000/svg'>\n";
+
+    for(size_t netId = 0; netId < _vNetGrid.size(); ++ netId){
+        for (size_t layId = 0; layId < _vNetGrid[netId].size(); ++ layId) {
+            for (size_t gridId = 0; gridId < _vNetGrid[netId][layId].size(); gridId ++) {
+                Grid* grid = _vNetGrid[netId][layId][gridId];
+                grid->Sort_ST_dis();
+                int colorValue = grid->Tdis(0)[0].first % 256;
+                std::string color = "rgb(" + std::to_string(colorValue) + "," + std::to_string(colorValue) + "," + std::to_string(colorValue) + ")";
+                svgT += "<rect x='" + std::to_string(grid->xId()+500*layId) + "' y='" + std::to_string(grid->yId()) + "' width='" + std::to_string(1) + "' height='" + std::to_string(1) + "' fill='" + color + "' />\n";
+            }
+        }
+    }
+    svgT += "</svg>\n";
+    fileT << svgT;
+    fileT << "</body>\n</html>\n";
+   
 }

@@ -80,6 +80,7 @@ class Grid {
         bool hasSearched_Target(size_t Id, size_t n ) { return _Tdis[n][Id].second; }
         vector <pair<int, bool> > Sdis() { return _Sdis; }
         vector <pair<int,bool> > Tdis(size_t n) { return _Tdis[n]; }
+        void Sort_ST_dis();
 
     private:
         int _congestion;    // _congestHis + _congestCur

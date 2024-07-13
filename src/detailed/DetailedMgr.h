@@ -132,6 +132,8 @@ class DetailedMgr {
         void search_ToSource_distance(size_t viaId, size_t netId, size_t layId, size_t xId, size_t yId);
         void search_ToTarget_distance(size_t viaId, size_t netId, size_t layId, size_t TportId, size_t xId, size_t yId);
         void writeCSV(ofstream& file);
+        void Sort_allSTdis();
+        void visulaize_STdis(ofstream& fileS, ofstream& fileT);
 
         //inference 
         void set_voltage(ifstream& file);

@@ -58,17 +58,19 @@
     },
     "cmake.debugConfig": {
         "args": [
-            "${workspaceFolder}/exp/input/ST_Components_1.txt",
+            "${workspaceFolder}/exp/input/ST_Components_4.txt",
             "${workspaceFolder}/exp/input/parameters_3.txt",
-            "${workspaceFolder}/exp/input/Example_Project_1.txt",
+            //"${workspaceFolder}/exp/input/Example_Project_1.txt",
             //"${workspaceFolder}/exp/input/Project2_MTL_H_NoCross_Modified.txt",
             //"${workspaceFolder}/exp/input/Project3_MTL_P_NoCross_Modified.txt",
-            //"${workspaceFolder}/exp/input/Project4_MTL_U_NoCross_Modified.txt",
+            "${workspaceFolder}/exp/input/Project4_MTL_U_NoCross_Modified.txt",
             "${workspaceFolder}/exp/input/obstacle.txt",
-            "${workspaceFolder}/exp/output/output_case1_thread.html",
+            "${workspaceFolder}/exp/output/output_case4_thread.html",
             "${workspaceFolder}/exp/output/tuningRes.txt",
-            "${workspaceFolder}/exp/output/case1.csv",
-            "${workspaceFolder}/exp/input/result.txt"
+            "${workspaceFolder}/exp/output/case4.csv",
+            "${workspaceFolder}/exp/input/result.txt",
+            "${workspaceFolder}/exp/output/case4_Sdis.html",
+            "${workspaceFolder}/exp/output/case4_Tdis.html",
         ]
         
     },
