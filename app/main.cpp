@@ -15,7 +15,7 @@ using namespace std;
 int main(int argc, char* argv[]){
 
     ifstream finST, fin, finOb, finPa, fresult;
-    ofstream fout, ftunRes, fcsv, fS, fT;
+    ofstream fout, ftunRes, fcsv;
     finST.open(argv[1], ifstream::in);
     if (finST.is_open()) {
         cout << "input file (st components) is opened successfully" << endl;
@@ -90,18 +90,18 @@ int main(int argc, char* argv[]){
     } else {
         cerr << "Error opening input file" << endl;
     }
-    fS.open(argv[9], ifstream::in);
-    if (fS.is_open()) {
-        cout << "S distance file is opened successfully" << endl;
-    } else {
-        cerr << "Error opening input file" << endl;
-    }
-    fT.open(argv[10], ifstream::in);
-    if (fT.is_open()) {
-        cout << "T distance file is opened successfully" << endl;
-    } else {
-        cerr << "Error opening input file" << endl;
-    }
+    // fS.open(argv[9], ifstream::in);
+    // if (fS.is_open()) {
+    //     cout << "S distance file is opened successfully" << endl;
+    // } else {
+    //     cerr << "Error opening input file" << endl;
+    // }
+    // fT.open(argv[10], ifstream::in);
+    // if (fT.is_open()) {
+    //     cout << "T distance file is opened successfully" << endl;
+    // } else {
+    //     cerr << "Error opening input file" << endl;
+    // }
     
     // ofstream fout1;
     // fout1.open(argv[2], ofstream::out);
@@ -113,11 +113,11 @@ int main(int argc, char* argv[]){
     double gridWidth = 1;
 
     // For Example 1
-    // double boardWidth = 75*gridWidth;
-    // double boardHeight = 40*gridWidth;
-    // size_t numLayers = 4;
-    // double offsetX = 40;
-    // double offsetY = 40;
+    double boardWidth = 75*gridWidth;
+    double boardHeight = 40*gridWidth;
+    size_t numLayers = 4;
+    double offsetX = 40;
+    double offsetY = 40;
 
     // For Example 2 
     // double boardWidth = 100*gridWidth;
@@ -134,11 +134,11 @@ int main(int argc, char* argv[]){
     // double offsetY = 20;
 
     // // For Example 4 
-    double boardWidth = 80*gridWidth;
-    double boardHeight = 55*gridWidth;
-    size_t numLayers = 4;
-    double offsetX = 120;
-    double offsetY = 10;
+    // double boardWidth = 80*gridWidth;
+    // double boardHeight = 55*gridWidth;
+    // size_t numLayers = 4;
+    // double offsetX = 120;
+    // double offsetY = 10;
 
     // // For Example 5
     // double boardWidth = 90*gridWidth;
